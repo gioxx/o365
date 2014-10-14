@@ -2,11 +2,12 @@
 # OFFICE 365: Remove Mailbox Permission
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.2
+# Versione:				0.3
 # Utilizzo:				.\RemoveMailboxPermission.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		25-07-2014
+# Ultima modifica:		14-10-2014
 # Modifiche:
+#	0.3- Inclusa la rimozione dell'ACL GrantSendOnBehalfTo (prima non era prevista, aggiunta anche nello script di AddPermission)
 #	0.2- Inclusa la rimozione dell'ACL SendAs (prima veniva effettuata la rimozione del solo FullAccess, rimaneva attivo il SendAs)
 ############################################################################################################################
 
@@ -30,6 +31,9 @@ try
 		""
 		Write-Host "Tento rimozione parametro SendAs per $GiveAccessTo (su $SourceMailbox)" -foregroundcolor "yellow"
 		Remove-RecipientPermission $SourceMailbox -Trustee $GiveAccessTo -AccessRights SendAs
+		""
+		Write-Host "Tento rimozione parametro GrantSendOnBehalfTo per $GiveAccessTo (su $SourceMailbox)" -foregroundcolor "yellow"
+		Set-Mailbox $SourceMailbox –Grantsendonbehalfto @{Remove="$GiveAccessTo"}
 		""
 		Write-Host "All Done!" -foregroundcolor "green"
 		Write-Host "Riepilogo accessi alla casella di $SourceMailbox " -foregroundcolor "yellow"
