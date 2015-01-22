@@ -2,11 +2,12 @@
 # OFFICE 365: Add Mailbox Permission (Full Access / SendAs / GrantSendOnBehalfTo / Auto-mapping)
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.4
+# Versione:				0.5
 # Utilizzo:				.\AddMailboxPermission.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		14-10-2014
+# Ultima modifica:		22-10-2014
 # Modifiche:
+#	0.5- modificata la richiesta di GrantSendOnBehalfTo che ora viene mostrata solo se si rifiuta il SendAs
 #	0.4- aggiungo la possibilità di specificare se l'utente deve inviare con proprietà Grantsendonbehalfto e non SendAs completo.
 #	0.3- prevedo la possibilità di scegliere l'auto-mapping della casella su Outlook, non utile nel caso di Shared Mailbox che impedirebbero in seguito la ricerca nelle sottocartelle.
 #	0.2- rev1/rev4-correpzioni minori, inclusa adesso la possibilità di modificare ulteriormente le ACL dando anche accesso "Invia Come" (SendAs)
@@ -47,8 +48,8 @@ try
 				""
 			}
 		
-		$title = ""
-		$message = "SendAs - L'utente $GiveAccessTo deve poter inviare come fosse $SourceMailbox ? (ATTENZIONE: questo permette a $GiveAccessTo di scrivere a tutti gli effetti come fosse $SourceMailbox )"
+		$title = "SendAs - L'utente $GiveAccessTo deve poter inviare come fosse $SourceMailbox ?"
+		$message = "ATTENZIONE: questo permette a $GiveAccessTo di scrivere a tutti gli effetti come fosse $SourceMailbox"
 		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
 		$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
 		$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
@@ -57,19 +58,22 @@ try
 			Add-RecipientPermission $SourceMailbox -Trustee $GiveAccessTo -AccessRights SendAs
 			""
 			}
+		else {
 		
-		""	
-		$title = ""
-		$message = "Send On Behalf To - L'utente $GiveAccessTo deve poter inviare a nome di $SourceMailbox ?"
-		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
-		$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
-		$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
-		$PermissionType = $host.ui.PromptForChoice($title, $message, $options, 0)
-		if ($PermissionType -eq 0) {
-			Set-Mailbox $SourceMailbox -GrantSendOnBehalfTo @{add="$GiveAccessTo"}
-			""
-			}
+				""
+				$title = "SendAs non impostato."
+				$message = "L'utente $GiveAccessTo deve poter almeno inviare a nome di $SourceMailbox (Send On Behalf To)?"
+				$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
+				$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
+				$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
+				$PermissionType = $host.ui.PromptForChoice($title, $message, $options, 0)
+				if ($PermissionType -eq 0) {
+					Set-Mailbox $SourceMailbox -GrantSendOnBehalfTo @{add="$GiveAccessTo"}
+					""
+					}
+		}
 
+		""
 		Write-Host "All Done!" -foregroundcolor "green"
 		Get-MailboxPermission -Identity $SourceMailbox -User $GiveAccessTo
 	}

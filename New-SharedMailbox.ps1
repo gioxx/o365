@@ -7,13 +7,14 @@
 # Last Modified By: 	Alan Byrne
 #----------------------------------------------------------------------------------------------------------------
 # Adattata da:			GSolone
-# Versione:				0.4
+# Versione:				0.6
 # Utilizzo:				.\New-SharedMailbox.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		04-12-2013 (07052014-rev5)
+# Ultima modifica:		15-01-2015
 # Modifiche:
-#	rev5-correzioni minori
-#	rev1/rev4-rimosso limite Shared a 5GB, forzata la richiesta dell'alias da utilizzare, rimossa richiesta permission Send As e Automap (entrambe dati per scontati e impostati di default), forzato il MicrosoftOnlineServicesID sull'indirizzo completo di posta elettronica
+#	0.6-ho dovuto inserire un nuovo "sleep" prima di settare il MicrosoftOnlineServicesID perché in alcuni casi il server Exchange non trova immediatamente l'utente, cosa che invece succede già a 10 secondi di distanza dal comando di creazione casella.
+#	0.5-correzioni minori
+#	0.1/0-4-rimosso limite Shared a 5GB, forzata la richiesta dell'alias da utilizzare, rimossa richiesta permission Send As e Automap (entrambe dati per scontati e impostati di default), forzato il MicrosoftOnlineServicesID sull'indirizzo completo di posta elettronica
 ############################################################################################################################
 
 #Main
@@ -39,6 +40,7 @@ Function Main {
 		Write-Host "Creo la Shared Mailbox, attendi." -foregroundcolor "yellow"
 		""
 		New-Mailbox -Name $SharedMailboxDisplayName -Alias $SharedMailboxAlias -Shared -PrimarySMTPAddress $SharedMailboxUserName
+		Start-Sleep -s 10
 		#Forzo il MicrosoftOnlineServicesID (per evitare il default NOME@DOMINIO.onmicrosoft.com)
 		Set-Mailbox $SharedMailboxDisplayName -MicrosoftOnlineServicesID $SharedMailboxUserName
 	}

@@ -2,14 +2,14 @@
 # OFFICE 365: Bulk Set User Company Field
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.3
+# Versione:				0.4
 # Utilizzo:				.\SetCompanyBulk.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		14-04-2014 (06082014-rev4)
+# Ultima modifica:		25-09-2014
 # Modifiche:			
+#	0.4- Modificato il $_.EmailAddresses in $_.PrimarySmtpAddress per mettere la Company in base all'indirizzo di posta principale e non considerare eventuali alias
 #	0.3- Modificato il -ResultSize Unlimited per supportare il numero massimo di caselle
-#	0.2- Inserita notifica di lavorazione per ciascun utente (prima assegnava il campo senza notificare alcunché
-#		durante la lavorazione, si arrivava direttamente alla fine del ciclo ForEach)
+#	0.2- Inserita notifica di lavorazione per ciascun utente (prima assegnava il campo senza notificare alcunché durante la lavorazione, si arrivava direttamente alla fine del ciclo ForEach)
 ############################################################################################################################
 
 #Main
@@ -30,7 +30,8 @@ Function Main {
 	{
 		""
 		Write-Host "Ricerco le caselle con il dominio che mi hai richiesto, attendi." -foregroundcolor "yellow"
-		$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.EmailAddresses -like "*" + $RicercaDominio}
+		$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*" + $RicercaDominio}
+		#$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.EmailAddresses -like "*" + $RicercaDominio}
 		Write-Host "Applico il valore Company alle utenze rilevate ..." -foregroundcolor "yellow"
 		""
 		$RicercaMailbox | ForEach {Write-Host "Utente: $_"; Set-User $_.UserPrincipalName -Company $RicercaCompany}
