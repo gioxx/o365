@@ -2,11 +2,12 @@
 # OFFICE 365: Export Company Users
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.1
+# Versione:				0.2
 # Utilizzo:				.\ExportCompanyUsers.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		01-08-2014
-# Modifiche:			-
+# Ultima modifica:		16-04-2015
+# Modifiche:			
+#	0.2- Stato di avanzamento in lettura / scrittura dati). Modificato il $_.EmailAddresses in $_.PrimarySmtpAddress per mettere la Company in base all'indirizzo di posta principale e non considerare eventuali alias
 ############################################################################################################################
 
 #Main
@@ -19,10 +20,15 @@ Function Main {
 	
 	try
 	{
-		""
-		Write-Host "Ricerco le caselle con il dominio che mi hai richiesto, attendi." -foregroundcolor "yellow"
-		$RicercaMailbox= Get-Mailbox -ResultSize unlimited | where {$_.EmailAddresses -like "*@" + $RicercaDominio}
-		""
+		Write-Progress -Activity "Download dati da Exchange" -Status "Ricerco le caselle con il dominio che mi hai richiesto, attendi..."
+		#$RicercaMailbox= Get-Mailbox -ResultSize unlimited | where {$_.EmailAddresses -like "*@" + $RicercaDominio}
+		$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*" + $RicercaDominio}
+		$i=0
+		ForEach ($comm in $RicercaMailbox) {
+			$i++
+			Write-Progress -activity "Report dati" -status "Scrittura dati su file ..." -PercentComplete (($i / $RicercaMailbox.count)*100)
+			}
+		
 		$RicercaMailbox | FT DisplayName, UserPrincipalName
 		Write-Host "Esporto l'elenco in C:\temp\$RicercaDominio.txt e apro il file (salvo errori)." -foregroundcolor "green"
 		$ExportList = "C:\temp\$RicercaDominio.txt"
