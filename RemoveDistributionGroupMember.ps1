@@ -1,11 +1,11 @@
 ############################################################################################################################
-# OFFICE 365: Add Distribution Group Member (recursive)
+# OFFICE 365: Remove Distribution Group Member (recursive)
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
 # Versione:				0.1
-# Utilizzo:				.\AddDistributionGroupMember.ps1
+# Utilizzo:				.\RemoveDistributionGroupMember.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		19-09-2014
+# Ultima modifica:		21-04-2015
 # Modifiche:			-
 ############################################################################################################################
 
@@ -13,7 +13,7 @@
 Function Main {
 
 	""
-	Write-Host "        Office 365: Add Distribution Group Member" -foregroundcolor "green"
+	Write-Host "        Office 365: Remove Distribution Group Member" -foregroundcolor "green"
 	Write-Host "        ------------------------------------------"
 	Write-Host "          ATTENZIONE:" -foregroundcolor "red"
 	Write-Host "          Fare molta attenzione ai possibili errori di digitazione" -foregroundcolor "red"
@@ -27,15 +27,15 @@ Function Main {
 	{
 		try
 			{
-				$UsrGroup = Read-Host "Utente da aggiungere (esempio: mario.rossi/mario rossi/user@domain.tld)"
-				Add-DistributionGroupMember -Identity $DistrGroup -Member $UsrGroup
+				$UsrGroup = Read-Host "Utente da rimuovere (esempio: mario.rossi/mario rossi/user@domain.tld) "
+				Remove-DistributionGroupMember -Identity $DistrGroup -Member $UsrGroup
 				Write-Host "Done." -foregroundcolor green
 				""
 
 				$title = ""
-				$message = "Vuoi aggiungere altri utenti al gruppo?"
+				$message = "Vuoi rimuovere altri utenti dal gruppo?"
 
-				$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Aggiungi utente."
+				$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Rimuovi utente."
 				$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Non ora."
 				$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
 
@@ -51,7 +51,7 @@ Function Main {
 	}
 	
 	""
-	Write-Host "-------------------------------------------------------------------------------------------------" -f yellow
+	Write-Host "-------------------------------------------------------------------------------------------------" -foregroundcolor yellow
 	""
 	$title = ""
 	$message = "Vuoi controllare chi fa ora parte del gruppo?"

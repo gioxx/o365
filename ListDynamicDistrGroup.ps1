@@ -5,7 +5,7 @@
 # Versione:				0.1
 # Utilizzo:				.\ListDynamicDistrGroup.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		22-01-2015
+# Ultima modifica:		13-10-2015
 # Modifiche:			-
 ############################################################################################################################
 
@@ -15,7 +15,7 @@ Function Main {
 	""
 	Write-Host "        Office 365: Show Dynamic Distribution Group Users" -foregroundcolor "green"
 	Write-Host "        ------------------------------------------"
-	$RicercaGruppo = Read-Host "Mostra utenti del gruppo (esempio: Emmelibri srl - Utenti) "
+	$RicercaGruppo = Read-Host "Mostra utenti del gruppo (esempio: Contoso srl - Utenti)   "
 	
 	try
 	{

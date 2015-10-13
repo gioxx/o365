@@ -2,11 +2,12 @@
 # OFFICE 365: Set multiple Ownership for all Security Groups
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.1
+# Versione:				0.1 rev1
 # Utilizzo:				.\SetOwnershipSecurityGroups.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		28-11-2014
-# Modifiche:			-
+# Ultima modifica:		19-05-2015
+# Modifiche:
+#	0.1 rev1- modifiche minori
 ############################################################################################################################
 
 #Main
@@ -27,6 +28,12 @@ $GroupOwners = "admin01@domain.tld", "admin02@domain.tld"
 	Write-Host "          dello script stesso." -foregroundcolor "Cyan"
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
+	""
+	Write-Host "		Attuali owners dichiarati nello script: $GroupOwners"
+	Write-Host "		Se non sono corretti termina questo script e modificalo inserendo i giusti riferimenti"
+	""
+	Write-Host "		Premi un tasto qualsiasi per continuare..."
+	[void][System.Console]::ReadKey($true)
 	
 	try
 	{

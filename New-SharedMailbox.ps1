@@ -10,7 +10,7 @@
 # Versione:				0.7
 # Utilizzo:				.\New-SharedMailbox.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		17-02-2015
+# Ultima modifica:		13-10-2015
 # Modifiche:
 #	0.7-ho commentato la forzatura del MicrosoftOnlineServicesID, non più necessaria
 #	0.6-ho dovuto inserire un nuovo "sleep" prima di settare il MicrosoftOnlineServicesID perché in alcuni casi il server Exchange non trova immediatamente l'utente, cosa che invece succede già a 10 secondi di distanza dal comando di creazione casella.
@@ -30,9 +30,9 @@ Function Main {
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
 	$SharedMailboxUserName = Read-Host "Indirizzo (esempio: info@domain.tld)        "
-	$SharedMailboxDisplayName = Read-Host "Nome casella (esempio: Emmelibri srl - Info)"
+	$SharedMailboxDisplayName = Read-Host "Nome casella (esempio: Contoso srl -Info)   "
 	#Forzo richiesta alias
-	$SharedMailboxAlias = Read-Host "Alias (esempio: Emmelibrisrl_info)          "
+	$SharedMailboxAlias = Read-Host "Alias (esempio: Contososrl_info)            "
 	
 	#Create the new Shared mailbox
 	try

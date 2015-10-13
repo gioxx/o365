@@ -2,11 +2,12 @@
 # OFFICE 365: Bulk Set User Company Field
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.4
+# Versione:				0.5
 # Utilizzo:				.\SetCompanyBulk.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		25-09-2014
-# Modifiche:			
+# Ultima modifica:		13-10-2015
+# Modifiche:	
+#	0.5- Correzione minore: la ricerca viene effettuata sullo specifico dominio in ingresso, un eventuale sottodominio deve essere dichiarato (esempio: contoso.com nella ricerca non mostrerà i risultati di dep1.contoso.com nell'eventualità dep1 fosse un suo sottodominio).		
 #	0.4- Modificato il $_.EmailAddresses in $_.PrimarySmtpAddress per mettere la Company in base all'indirizzo di posta principale e non considerare eventuali alias
 #	0.3- Modificato il -ResultSize Unlimited per supportare il numero massimo di caselle
 #	0.2- Inserita notifica di lavorazione per ciascun utente (prima assegnava il campo senza notificare alcunché durante la lavorazione, si arrivava direttamente alla fine del ciclo ForEach)
@@ -24,13 +25,13 @@ Function Main {
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
 	$RicercaDominio = Read-Host "Dominio da analizzare (esempio: domain.tld) "
-	$RicercaCompany = Read-Host "Valore Company (esempio: Emmelibri S.r.l.)  "
+	$RicercaCompany = Read-Host "Valore Company (esempio: Contoso S.r.l.)    "
 	
 	try
 	{
 		""
 		Write-Host "Ricerco le caselle con il dominio che mi hai richiesto, attendi." -foregroundcolor "yellow"
-		$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*" + $RicercaDominio}
+		$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*@" + $RicercaDominio}
 		#$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.EmailAddresses -like "*" + $RicercaDominio}
 		Write-Host "Applico il valore Company alle utenze rilevate ..." -foregroundcolor "yellow"
 		""

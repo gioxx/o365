@@ -7,7 +7,7 @@ Office 365 Powershell Tools è un set di script preparati per poter essere modifi
 Nello specifico
 --------
 
-Trovate tutti (o quasi) i riferimenti agli script nel mio [blog personale sotto apposito tag](http://gioxx.org/tag/o365-powershell). Gli articoli non sono tutti pronti e alcuni script potrebbero quindi non funzionare a dovere. Si parte dal presupposto che tutti -prima di lanciare qualsiasi script di questa cartella- abbia già fatto connessione via Powershell al proprio Exchange e abbia caricato i moduli MSOnline / MsolService:
+Trovate tutti (o quasi) i riferimenti agli script nel mio [blog personale sotto apposito tag](http://gioxx.org/tag/o365-powershell). Gli articoli non sono tutti pronti e alcuni script potrebbero quindi non funzionare a dovere. Si parte dal presupposto che l'amministratore Exchange -prima di lanciare qualsiasi script di questa cartella- abbia già fatto connessione via Powershell al proprio server e abbia caricato i moduli MSOnline / MsolService:
 
         $User = "esempio@domain.tld"
         $PWord = Get-Content C:\esempio\password.txt | ConvertTo-SecureString
@@ -20,7 +20,7 @@ Trovate tutti (o quasi) i riferimenti agli script nel mio [blog personale sotto 
 
 > **Attenzione:**
 
-> - Gli script vengono distribuiti as-is, occhio a ciò che fate, soprattutto in ambiente di produzione. Vi consiglio caldamente di attendere i relativi articoli sul blog che veranno poi aggiunti a questo readme prima di utilizzare uno script. Se possibile **effettuate dei test in ambiente NON di produzione**.
+> - Gli script vengono distribuiti as-is, occhio a ciò che fate, soprattutto in ambiente di produzione. Vi consiglio caldamente di attendere i relativi articoli sul blog che veranno poi aggiunti a questo readme prima di utilizzare uno script. Se possibile **effettuate dei test in ambiente NON di produzione**. Tutto questo è frutto di lavoro, qualche imprecazione e molte ricerche, molto difficilmente pubblicherò qualcosa che possa andare a spaccare il vostro lavoro su Exchange ma è sempre bene verificare con un paio di occhi in più ciò che si va a toccare (e magari condividere l'esperienza, che male non fa mai!).
 
 
 #### <i class="icon-file"></i> Dettagli dello script
