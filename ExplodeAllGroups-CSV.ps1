@@ -8,7 +8,7 @@
 # Ultima modifica:		02-10-2015
 # Fonti utilizzate:		https://gallery.technet.microsoft.com/office/List-all-Users-Distribution-7f2013b2
 #						https://gallery.technet.microsoft.com/office/Export-all-distribution-707c27eb
-# Modifiche:			#
+# Modifiche:			-
 ############################################################################################################################
 
 #Main

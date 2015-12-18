@@ -2,11 +2,12 @@
 # OFFICE 365: Export Company Users
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.3
+# Versione:				0.4
 # Utilizzo:				.\ExportCompanyUsers.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		18-06-2015
+# Ultima modifica:		26-10-2015
 # Modifiche:			
+#	0.4- Eliminato calcolo avanzamento download dati.
 #	0.3- Correzione minore: la ricerca viene effettuata sullo specifico dominio in ingresso, un eventuale sottodominio deve essere dichiarato (esempio: contoso.com nella ricerca non mostrerà i risultati di dep1.contoso.com nell'eventualità dep1 fosse un suo sottodominio).
 #	0.2- Stato di avanzamento in lettura / scrittura dati). Modificato il $_.EmailAddresses in $_.PrimarySmtpAddress per mettere la Company in base all'indirizzo di posta principale e non considerare eventuali alias
 ############################################################################################################################
@@ -22,13 +23,9 @@ Function Main {
 	try
 	{
 		Write-Progress -Activity "Download dati da Exchange" -Status "Ricerco le caselle con il dominio che mi hai richiesto, attendi..."
+		
 		#$RicercaMailbox= Get-Mailbox -ResultSize unlimited | where {$_.EmailAddresses -like "*@" + $RicercaDominio}
 		$RicercaMailbox= Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*@" + $RicercaDominio}
-		$i=0
-		ForEach ($comm in $RicercaMailbox) {
-			$i++
-			Write-Progress -activity "Report dati" -status "Scrittura dati su file ..." -PercentComplete (($i / $RicercaMailbox.count)*100)
-			}
 		
 		$RicercaMailbox | FT DisplayName, UserPrincipalName
 		Write-Host "Esporto l'elenco in C:\temp\$RicercaDominio.txt e apro il file (salvo errori)." -foregroundcolor "green"

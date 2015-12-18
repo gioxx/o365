@@ -2,16 +2,17 @@
 # OFFICE 365: Remove Mailbox Permission
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.5
+# Versione:				0.6
 # Utilizzo:				.\RemoveMailboxPermission.ps1
 #						(opzionale, passaggio dati da prompt) .\RemoveMailboxPermission.ps1 -SourceMailbox shared@contoso.com -RemoveAccessTo mario.rossi@contoso.com
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		20-10-2015
+# Ultima modifica:		13-11-2015
 # Modifiche:
-#	0.5- Corretto if-else di richiesta informazioni da prompt.
-#	0.4- Lo script accetta adesso i parametri passati da riga di comando (-SourceMailbox e -RemoveAccessTo)
-#	0.3- Inclusa la rimozione dell'ACL GrantSendOnBehalfTo (prima non era prevista, aggiunta anche nello script di AddPermission)
-#	0.2- Inclusa la rimozione dell'ACL SendAs (prima veniva effettuata la rimozione del solo FullAccess, rimaneva attivo il SendAs)
+#	0.6- nel riepilogo dei permessi sulla casella (FullAccess e SendAs) (al termine dell'operazione) filtro NT AUTHORITY\SELF e S-1-5* (utenti non più presenti nel sistema).
+#	0.5- corretto if-else di richiesta informazioni da prompt.
+#	0.4- lo script accetta adesso i parametri passati da riga di comando (-SourceMailbox e -RemoveAccessTo)
+#	0.3- inclusa la rimozione dell'ACL GrantSendOnBehalfTo (prima non era prevista, aggiunta anche nello script di AddPermission)
+#	0.2- inclusa la rimozione dell'ACL SendAs (prima veniva effettuata la rimozione del solo FullAccess, rimaneva attivo il SendAs)
 ############################################################################################################################
 
 #Verifica parametri da prompt
@@ -56,7 +57,9 @@ try
 	""
 	Write-Host "All Done!" -f "green"
 	Write-Host "Riepilogo accessi alla casella di $SourceMailbox " -f "yellow"
-	Get-MailboxPermission -Identity $SourceMailbox
+	# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+	Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | ft User, "Access Rights" | out-string
+	Get-RecipientPermission $SourceMailbox -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | ft Trustee, AccessRights | out-string
 }
 catch
 {

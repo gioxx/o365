@@ -2,14 +2,16 @@
 # OFFICE 365: Add Mailbox Permission (Full Access / SendAs / GrantSendOnBehalfTo / Auto-mapping)
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.8
+# Versione:				0.10
 # Utilizzo:				.\AddMailboxPermission.ps1
-#						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 -SourceMailbox shaRed@contoso.com -GiveAccessTo mario.rossi@contoso.com
+#						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		20-10-2015
+# Ultima modifica:		13-11-2015
 # Modifiche:
-#	0.8- Corretto if-else di richiesta informazioni da prompt.
-#	0.7- Lo script accetta adesso i parametri passati da riga di comando (-SourceMailbox e -GiveAccessTo)
+#	0.10- includo un blocco di verifica permessi finali (a operazione di ADD terminata) così da verificare gli utenti con accesso alla casella di posta (FullAccess e SendAs), escludendo NT AUTHORITY\SELF e S-1-5* (utenti non più presenti nel sistema).
+#	0.9- corretto variabile GiveAccessTo (riportata male nell'IF di controllo Empty String)
+#	0.8- corretto if-else di richiesta informazioni da prompt.
+#	0.7- lo script accetta adesso i parametri passati da riga di comando (-SourceMailbox e -GiveAccessTo)
 #	0.6- correzioni minori. Messo meglio in evidenza i dettagli riguardanti il "Send As" e il "Send on Behalf to".
 #	0.5- modificata la richiesta di GrantSendOnBehalfTo che ora viene mostrata solo se si rifiuta il SendAs.
 #	0.4- aggiungo la possibilità di specificare se l'utente deve inviare con proprietà Grantsendonbehalfto e non SendAs completo.
@@ -29,7 +31,7 @@ Param(
 Write-Host "        Office 365: Add Mailbox Permission" -f "Green"
 Write-Host "        ------------------------------------------"
 
-if (([string]::IsNullOrEmpty($SourceMailbox) -eq $true) -or ([string]::IsNullOrEmpty($RemoveAccessTo) -eq $true))
+if ( [string]::IsNullOrEmpty($SourceMailbox) -OR [string]::IsNullOrEmpty($GiveAccessTo) )
 {
 	#MANCANO I DETTAGLI DA PROMPT, LI RICHIEDO A VIDEO
 	
@@ -39,7 +41,7 @@ if (([string]::IsNullOrEmpty($SourceMailbox) -eq $true) -or ([string]::IsNullOrE
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
 	""
-	$SourceMailbox = Read-Host "Casella alla quale dare accesso (esempio: shaRedmailbox@domain.tld)"
+	$SourceMailbox = Read-Host "Casella alla quale dare accesso (esempio: sharedmailbox@domain.tld)"
 	$GiveAccessTo = Read-Host "Utente al quale dare Full Access (esempio: mario.rossi@domain.tld) "
 	""
 }
@@ -49,12 +51,11 @@ try
 	""
 	Write-Host "Autorizzo $GiveAccessTo a utilizzare $SourceMailbox ..." -f "Yellow"
 	""
-	$title = ""
 	$message = "$GiveAccessTo deve caricare automaticamente $SourceMailbox in Outlook (auto-mapping)?"
 	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
 	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
 	$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
-	$PermissionType = $host.ui.PromptForChoice($title, $message, $options, 0)
+	$PermissionType = $host.ui.PromptForChoice("", $message, $options, 0)
 	if ($PermissionType -eq 0) {
 		Add-MailboxPermission -Identity $SourceMailbox -User $GiveAccessTo -AccessRights FullAccess
 		""
@@ -83,12 +84,11 @@ try
 	else {
 		""
 		Write-Host "SendAs non impostato." -f "Red"
-		$title = " "
 		$message = "Send On Behalf To - L'utente $GiveAccessTo deve poter almeno inviare a nome di $SourceMailbox (Es. Mario Rossi per conto di $SourceMailbox)?"
 		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
 		$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
 		$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
-		$PermissionType = $host.ui.PromptForChoice($title, $message, $options, 0)
+		$PermissionType = $host.ui.PromptForChoice("", $message, $options, 0)
 		if ($PermissionType -eq 0) {
 			Set-Mailbox $SourceMailbox -GrantSendOnBehalfTo @{add="$GiveAccessTo"}
 			""
@@ -101,7 +101,10 @@ try
 
 	""
 	Write-Host "All Done!" -f "Green"
-	Get-MailboxPermission -Identity $SourceMailbox -User $GiveAccessTo
+	Write-Host "Riepilogo accessi alla casella di $SourceMailbox " -f "yellow"
+	# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+	Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | ft User, "Access Rights" | out-string
+	Get-RecipientPermission $SourceMailbox -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | ft Trustee, AccessRights | out-string
 }
 catch
 {

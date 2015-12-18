@@ -2,28 +2,26 @@
 # OFFICE 365: Reset User Password from PowerShell
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.1
+# Versione:				0.2
 # Utilizzo:				.\ResetPassword.ps1
+#						(opzionale, passaggio dati da prompt) .\ResetPassword.ps1 mario.rossi@contoso.com
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		05-10-2015
+# Ultima modifica:		30-10-2015
 # Fonti utilizzate:		http://blogs.technet.com/b/heyscriptingguy/archive/2013/06/03/generating-a-new-password-with-windows-powershell.aspx
-# Modifiche:			-
+# Modifiche:			
+#	0.2- consente il passaggio del dato di casella di posta da modificare (es. .\ResetPassword.ps1 mario.rossi@contoso.com
 ############################################################################################################################
+
+#Verifica parametri da prompt
+Param( 
+    [Parameter(Position=0, Mandatory=$false, ValueFromPipeline=$true)] 
+    [string] $RicercaUser
+)
 
 #Main
 Function Main {
 
-	""
-	Write-Host "        Office 365: User Password Reset" -f "green"
-	Write-Host "        ------------------------------------------"
-	Write-Host "          ATTENZIONE:" -foregroundcolor "red"
-	Write-Host "          Fare molta attenzione ai possibili errori di digitazione" -foregroundcolor "red"
-	Write-Host "          nei dati richiesti qui di seguito" -foregroundcolor "red"
-	""
-	Write-Host "-------------------------------------------------------------------------------------------------"
-	$RicercaUser = Read-Host "Utente (esempio: info@domain.tld) "
-	
-	#------------ Formattazione
+	#------------ Specifiche formattazione
 	$Blocco = @{ForegroundColor="yellow"; object="          -----------------------------------------------------------";}
 	$Blocco_Verde = @{ForegroundColor="green"; object="          -----------------------------------------------------------";}
 	$Vuoto	= @{object="                                                                      ";}
@@ -32,6 +30,27 @@ Function Main {
 	$Chiudi = @{ForegroundColor="yellow"; object=" |";}
 	$Verde	= @{ForegroundColor="green"; NoNewLine = $true;}
 	$Bianco	= @{ForegroundColor="white"; NoNewLine = $true;}
+	#------------ Termine specifiche formattazione
+
+	""
+	Write-Host "        Office 365: User Password Reset" -f "green"
+	Write-Host "        ------------------------------------------"
+	
+	if ( [string]::IsNullOrEmpty($RicercaUser) )
+	{
+		#MANCANO I DETTAGLI DA PROMPT, LI RICHIEDO A VIDEO
+		Write-Host "          ATTENZIONE:" -foregroundcolor "red"
+		Write-Host "          Fare molta attenzione ai possibili errori di digitazione" -foregroundcolor "red"
+		Write-Host "          nei dati richiesti qui di seguito" -foregroundcolor "red"
+		""
+		Write-Host "-------------------------------------------------------------------------------------------------"
+		$RicercaUser = Read-Host "Utente (esempio: info@domain.tld) "
+	} else {
+		""
+		Write-Host @Blocco; Write-Host @Vuoto
+		Write-Host "          Modifica password utente di " @Bianco; Write-Host $RicercaUser @Verde
+		Write-Host @Vuoto; Write-Host @Blocco
+	}
 	
 	#------------ Blocco Operazione
 	""
