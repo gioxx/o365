@@ -2,15 +2,16 @@
 # OFFICE 365: Remove Orphaned SID (Bulk, CSV)
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.3
+# Versione:				0.4
 # Utilizzo:				.\RemoveOrphanedSID-CSV.ps1
 #						(opzionale, modifica posizione file CSV) .\RemoveOrphanedSID-CSV.ps1 -csv C:\Export.CSV
 #						(opzionale, analisi singola casella) .\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com
 #						(opzionale, avvio rimozione) .\RemoveOrphanedSID-CSV.ps1 -action remove
 #						I parametri da prompt possono essere concatenati.
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		18-12-2015
-# Modifiche:			
+# Ultima modifica:		18-01-2016
+# Modifiche:	
+#	0.4- corretto errore che non esportava in CSV temporaneo i SID orfani di una singola mailbox (.\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com)
 #	0.3- prevedo concatenamento del file CSV da utilizzare con Action di Remove. Così facendo salto l'esportazione. Esempio di utilizzo: .\RemoveOrphanedSID-CSV.ps1 -csv C:\temp\OrphanedSID.csv -action remove. Corretti errori minori, modificata indentazione dello script. Richiedo ora cancellazione della lista CSV al termine di una Action di Remove.
 #	0.2 rev1- correzioni minori (maggiori informazioni di utilizzo nel messaggio a video quando si lancia lo script).		
 #	0.2- le condizioni di verifica fanno ora scomparire / comparire istruzioni a video. Prevedo l'utilizzo di un file CSV temporaneo nel caso in cui si vada a filtrare una sola mailbox con action remove. In caso contrario, in base a quanti e quali parametri utilizzo, mi comporto diversamente. Il file temporaneo (CSV) di esportazione SID orfani di singola casella, viene poi eliminato al termine dell'operazione.
@@ -149,6 +150,10 @@ try
 	
 	# Remove dei SID per singola Mailbox specificata a riga di comando
 	if ($Action -eq "remove" -and [string]::IsNullOrEmpty($Mbox) -eq $false) {
+		Write-Host "Analizzo la casella di posta $Mbox ..." -f "Yellow"
+		Get-Mailbox $Mbox | Get-MailboxPermission | where {$_.accessrights -eq "FullAccess" -and $_.user -like "S-1-5-21*"} | Select-object identity,user | Export-CSV -NoTypeInformation C:\temp\OrphSidTemp.csv
+		Get-Mailbox $Mbox | Get-MailboxPermission | where {$_.accessrights -eq "FullAccess" -and $_.user -like "S-1-5-21*"} | Select-object identity,user
+		""
 		Write-Host "Pulisco i SID orfani di $Mbox ..." -f "Red"
 		import-csv C:\temp\OrphSidTemp.csv | ForEach-Object {
 			Write-Progress -activity "Remove Orphaned SID" -status "Modifico $_.identity"
