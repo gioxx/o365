@@ -2,15 +2,16 @@
 # OFFICE 365: Remove Orphaned SID (Bulk, CSV)
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.4
+# Versione:				0.4 rev1
 # Utilizzo:				.\RemoveOrphanedSID-CSV.ps1
 #						(opzionale, modifica posizione file CSV) .\RemoveOrphanedSID-CSV.ps1 -csv C:\Export.CSV
 #						(opzionale, analisi singola casella) .\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com
 #						(opzionale, avvio rimozione) .\RemoveOrphanedSID-CSV.ps1 -action remove
 #						I parametri da prompt possono essere concatenati.
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		18-01-2016
-# Modifiche:	
+# Ultima modifica:		10-03-2016
+# Modifiche:
+#	0.4 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
 #	0.4- corretto errore che non esportava in CSV temporaneo i SID orfani di una singola mailbox (.\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com)
 #	0.3- prevedo concatenamento del file CSV da utilizzare con Action di Remove. Così facendo salto l'esportazione. Esempio di utilizzo: .\RemoveOrphanedSID-CSV.ps1 -csv C:\temp\OrphanedSID.csv -action remove. Corretti errori minori, modificata indentazione dello script. Richiedo ora cancellazione della lista CSV al termine di una Action di Remove.
 #	0.2 rev1- correzioni minori (maggiori informazioni di utilizzo nel messaggio a video quando si lancia lo script).		
@@ -73,8 +74,19 @@ try
 		""
 	}
 	
-	Write-Host "         Premi un tasto per continuare (CTRL+C seguito da invio per terminare)."; "";
-	[void][System.Console]::ReadKey($true)
+	Function Pause($M="Premi un tasto continuare (CTRL+C per annullare)") {
+		If($psISE) {
+			$S=New-Object -ComObject "WScript.Shell"
+			$B=$S.Popup("Fai clic su OK per continuare.",0,"In attesa dell'amministratore",0)
+			Return
+		}
+		Write-Host -NoNewline $M;
+		$I=16,17,18,20,91,92,93,144,145,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183;
+		While($K.VirtualKeyCode -Eq $Null -Or $I -Contains $K.VirtualKeyCode) {
+			$K=$Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+		}
+	}
+	Pause
 	
 	if ([string]::IsNullOrEmpty($Action)) {
 	# Esporto i SID orfani SOLO se non è prevista una Action di Remove

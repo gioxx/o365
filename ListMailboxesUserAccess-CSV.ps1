@@ -2,16 +2,17 @@
 # OFFICE 365: List Mailboxes User Access
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.4
+# Versione:				0.4 rev2
 # Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
 #						(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 #						(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
 #						(opzionale, numero caselle da analizzare) .\ListMailboxesUserAccess-CSV.ps1 -Count 10
-# Ultima modifica:		13-11-2015
+# Ultima modifica:		10-03-2016
 # Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
-# Modifiche:		
-#	0.4- correzioni minori.
+# Modifiche:
+#	0.4 rev2- aggiunta funzione di Pause per evitare di intercettare il tasto CTRL.
+#	0.4 (e rev1)- correzioni minori.
 #	0.3- introduco parametri da riga di comando per modificare posizione file CSV, filtrare un solo dominio di posta elettronica o limitare i risultati da ricercare.
 #	0.2- corretti problemi di ricerca ACL sulle caselle degli utenti di posta elettronica. Ora lo script ricerca tutti i permessi Full-Access impostati sulle caselle di posta elettronica di Exchange (a prescindere che si tratti di Shared Mailbox o caselle di posta personali).
 ############################################################################################################################
@@ -53,8 +54,19 @@ Function Main {
 		while ($RicercaACL -eq [string]::empty)
 	#>
 	
-	Write-Host "         Premi un tasto qualsiasi per continuare..."
-	[void][System.Console]::ReadKey($true)
+	Function Pause($M="Premi un tasto continuare (CTRL+C per annullare)") {
+		If($psISE) {
+			$S=New-Object -ComObject "WScript.Shell"
+			$B=$S.Popup("Fai clic su OK per continuare.",0,"In attesa dell'amministratore",0)
+			Return
+		}
+		Write-Host -NoNewline $M;
+		$I=16,17,18,20,91,92,93,144,145,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183;
+		While($K.VirtualKeyCode -Eq $Null -Or $I -Contains $K.VirtualKeyCode) {
+			$K=$Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+		}
+	}
+	Pause
 	
 	try
 	{
@@ -91,6 +103,7 @@ Function Main {
 		$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
 		$Excel = $host.ui.PromptForChoice("", $message, $options, 1)
 		if ($Excel -eq 0) { Invoke-Item $ExportList }
+		""
 		
 	}
 	catch

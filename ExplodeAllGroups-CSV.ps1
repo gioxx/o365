@@ -2,13 +2,14 @@
 # OFFICE 365: Explode all Groups
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.1
+# Versione:				0.1 rev1
 # Utilizzo:				.\ExplodeAllGroups-CSV.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		02-10-2015
+# Ultima modifica:		10-03-2016
 # Fonti utilizzate:		https://gallery.technet.microsoft.com/office/List-all-Users-Distribution-7f2013b2
 #						https://gallery.technet.microsoft.com/office/Export-all-distribution-707c27eb
-# Modifiche:			-
+# Modifiche:			
+#	0.1 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
 ############################################################################################################################
 
 #Main
@@ -35,8 +36,20 @@ Function Main {
 	Write-Host "		  - $ExportDistrGroup" -f "green"
 	Write-Host "		  - $ExportDynOutputFile" -f "green"
 	""
-	Write-Host "        Premi un tasto qualsiasi per continuare..."
-	[void][System.Console]::ReadKey($true)
+
+	Function Pause($M="Premi un tasto continuare (CTRL+C per annullare)") {
+		If($psISE) {
+			$S=New-Object -ComObject "WScript.Shell"
+			$B=$S.Popup("Fai clic su OK per continuare.",0,"In attesa dell'amministratore",0)
+			Return
+		}
+		Write-Host -NoNewline $M;
+		$I=16,17,18,20,91,92,93,144,145,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183;
+		While($K.VirtualKeyCode -Eq $Null -Or $I -Contains $K.VirtualKeyCode) {
+			$K=$Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+		}
+	}
+	Pause
 	
 	try
 	{

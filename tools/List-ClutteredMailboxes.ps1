@@ -2,15 +2,16 @@
 # OFFICE 365: Get Cluttered Mailboxes
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.2
+# Versione:				0.2 rev1
 # Utilizzo:				.\List-ClutteredMailboxes.ps1
 #						opzionale, output su CSV: .\List-ClutteredMailboxes.ps1 C:\temp\Clutter.csv
 #						opzionale, numero mailbox analizzate: .\List-ClutteredMailboxes.ps1 -Count 10
 #						opzionale, entrambi i parametri: .\List-ClutteredMailboxes.ps1 C:\temp\Clutter.csv 10
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		14-10-2015
+# Ultima modifica:		10-03-2016
 # Modifiche:
-#	0.2-	accetta output su CSV (esempio: .\List-ClutteredMailboxes.ps1 C:\temp\Clutter.csv) e numero di caselle da analizzare (esempio: .\List-ClutteredMailboxes.ps1 -Count 10)
+#	0.2 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
+#	0.2- accetta output su CSV (esempio: .\List-ClutteredMailboxes.ps1 C:\temp\Clutter.csv) e numero di caselle da analizzare (esempio: .\List-ClutteredMailboxes.ps1 -Count 10)
 #	0.1 rev2- modifiche minori
 #	0.1 rev1- migliorato output dello script
 ############################################################################################################################
@@ -35,8 +36,20 @@ Function Main {
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
 	""
-	Write-Host "		Premi un tasto qualsiasi per continuare..."
-	[void][System.Console]::ReadKey($true)
+	
+	Function Pause($M="Premi un tasto continuare (CTRL+C per annullare)") {
+		If($psISE) {
+			$S=New-Object -ComObject "WScript.Shell"
+			$B=$S.Popup("Fai clic su OK per continuare.",0,"In attesa dell'amministratore",0)
+			Return
+		}
+		Write-Host -NoNewline $M;
+		$I=16,17,18,20,91,92,93,144,145,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183;
+		While($K.VirtualKeyCode -Eq $Null -Or $I -Contains $K.VirtualKeyCode) {
+			$K=$Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+		}
+	}
+	Pause
 	
 	try
 	{
