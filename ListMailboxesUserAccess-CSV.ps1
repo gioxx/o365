@@ -2,15 +2,17 @@
 # OFFICE 365: List Mailboxes User Access
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.4 rev2
+# Versione:				0.5
 # Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
 #						(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 #						(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
 #						(opzionale, numero caselle da analizzare) .\ListMailboxesUserAccess-CSV.ps1 -Count 10
-# Ultima modifica:		10-03-2016
+#						(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -Scope All
+# Ultima modifica:		16-03-2016
 # Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
 # Modifiche:
+#	0.5- il default di analisi passa alle Shared Mailbox. Per allargare lo scope sarà necessario richiamare lo script con parametro -Scope All.
 #	0.4 rev2- aggiunta funzione di Pause per evitare di intercettare il tasto CTRL.
 #	0.4 (e rev1)- correzioni minori.
 #	0.3- introduco parametri da riga di comando per modificare posizione file CSV, filtrare un solo dominio di posta elettronica o limitare i risultati da ricercare.
@@ -24,7 +26,9 @@ Param(
     [Parameter(Position=1, Mandatory=$false, ValueFromPipeline=$true)] 
     [string] $Domain,
     [Parameter(Position=2, Mandatory=$false, ValueFromPipeline=$true)] 
-    [string] $Count
+    [string] $Count,
+	[Parameter(Position=3, Mandatory=$false, ValueFromPipeline=$true)] 
+    [string] $Scope
 )
 
 #Main
@@ -35,19 +39,28 @@ Function Main {
 	# esportato dallo script (solo ciò che c'è tra le virgolette, ad esempio
 	# $ExportList = "C:\temp\export.csv" (per modificare anche la cartella di esportazione), 
 	# oppure $ExportList = "Permessi.csv" per salvare il file nella stessa cartella dello script.
+	# ATTENZIONE: utilizza (per comodità) nomi diversi nel caso in cui lo script esporti i permessi
+	# 			  delle caselle Shared piuttosto che quelle personali.
 	
-	if ([string]::IsNullOrEmpty($CSV) -eq $true) { $ExportList = "C:\temp\MailboxPermissions.csv" } 
-		else { $ExportList = $CSV }
+	if ([string]::IsNullOrEmpty($CSV) -eq $true) {
+		if ( $Scope -eq "All") {
+			# Permessi di tutte le caselle
+			$ExportList = "C:\temp\MailboxPermissions.csv"
+		} else { 
+			# Permessi delle Shared
+			$ExportList = "C:\temp\SharedMailboxPermissions.csv" }
+	} else { $ExportList = $CSV }
 		
 	################################################################################################
 
 	""
 	Write-Host "        Office 365: List Mailboxes User Access" -foregroundcolor "Green"
 	Write-Host "        ------------------------------------------"
-	Write-Host "         Lo script elenca tutti i diritti Full Access per ogni casella di posta" -f "White"
-	Write-Host "         presente su server Exchange, salvando i risultati su un file CSV" -f "White"
+	Write-Host "         Lo script elenca i diritti Full Access per ogni casella di posta" -f "White"
+	Write-Host "         presente su server Exchange (default: Shared Mailbox), salvando i risultati su un file CSV" -f "White"
 	Write-Host "         '" -f "White" -nonewline; Write-Host $ExportList -f "Green" -nonewline; Write-Host "'" -f "White"
-	Write-Host "         (esegui lo script con parametro -CSV PERCORSOFILE.CSV per modificare)." -f "White"
+	Write-Host "         (rilancia lo script con parametro -CSV PERCORSOFILE.CSV per modificare)." -f "White"
+	Write-Host "         (rilancia lo script con parametro -Scope All per analizzare tutte le caselle, non solo le Shared)." -f "White"
 	""
 	
 	<#do { $RicercaACL = Read-Host "Utente da cercare nei permessi (esempio: Mario Rossi) " } 
@@ -78,20 +91,42 @@ Function Main {
 		Get-Mailbox -ResultSize 100 | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation TestQuery.csv
 		#>
 		
-		if ([string]::IsNullOrEmpty($Count) -eq $true) { $Count = "Unlimited" }		
+		if ([string]::IsNullOrEmpty($Count) -eq $true) { $Count = "Unlimited" }
 		
-		if ([string]::IsNullOrEmpty($Domain) -eq $false) {
-			Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
-			Write-Host "         Counter analisi      : $Count" -f "Yellow"
-			""
-			# Se specificato .ps1 -Domain domain.tld, filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
-			Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+		if ( $Scope -eq "All") {
+			# Richiesta analisi di tutte le caselle di posta elettronica
+			if ([string]::IsNullOrEmpty($Domain) -eq $false) {
+				Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
+				Write-Host "         Counter analisi      : $Count" -f "Yellow"
+				Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
+				""
+				# Se specificato .ps1 -Domain domain.tld, filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
+				Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+			} else {
+				Write-Host "         Dominio da analizzare: All" -f "Yellow"
+				Write-Host "         Counter analisi      : $Count" -f "Yellow"
+				Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
+				""
+				# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+				Get-Mailbox -ResultSize $Count | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+			}
 		} else {
-			Write-Host "         Dominio da analizzare: All" -f "Yellow"
-			Write-Host "         Counter analisi      : $Count" -f "Yellow"
-			""
-			# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-			Get-Mailbox -ResultSize $Count | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+			# Default: analisi Shared Mailbox
+			if ([string]::IsNullOrEmpty($Domain) -eq $false) {
+				Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
+				Write-Host "         Counter analisi      : $Count" -f "Yellow"
+				Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
+				""
+				# Se specificato .ps1 -Domain domain.tld, filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
+				Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+			} else {
+				Write-Host "         Dominio da analizzare: All" -f "Yellow"
+				Write-Host "         Counter analisi      : $Count" -f "Yellow"
+				Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
+				""
+				# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+				Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+			}
 		}
 		
 		Write-Host "Done." -f "Green"
