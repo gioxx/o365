@@ -12,8 +12,8 @@ $Credential = New-Object –TypeName System.Management.Automation.PSCredential –Ar
 $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://ps.outlook.com/powershell/ -Credential $Credential -Authentication Basic -AllowRedirection
 Import-PSSession $Session
 $Credential = New-Object –TypeName System.Management.Automation.PSCredential –ArgumentList $User, $PWord
-    Import-Module MSOnline
-    Connect-MsolService -Credential $Credential
+Import-Module MSOnline
+Connect-MsolService -Credential $Credential
 
 > **Attenzione:**
 > Gli script vengono distribuiti as-is, occhio a ciò che fate, soprattutto in ambiente di produzione. Vi consiglio caldamente di attendere i relativi articoli sul blog che veranno poi aggiunti a questo readme prima di utilizzare uno script. Se possibile **effettuate dei test in ambiente NON di produzione**. Tutto questo è frutto di lavoro, qualche imprecazione e molte ricerche, molto difficilmente pubblicherò qualcosa che possa andare a spaccare il vostro lavoro su Exchange ma è sempre bene verificare con un paio di occhi in più ciò che si va a toccare (e magari condividere l'esperienza, che male non fa mai!).
