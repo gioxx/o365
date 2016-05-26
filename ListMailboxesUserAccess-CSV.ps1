@@ -1,23 +1,27 @@
-############################################################################################################################
-# OFFICE 365: List Mailboxes User Access
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				GSolone
-# Versione:				0.5
-# Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
-# Info:					http://gioxx.org/tag/o365-powershell
-#						(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
-#						(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
-#						(opzionale, numero caselle da analizzare) .\ListMailboxesUserAccess-CSV.ps1 -Count 10
-#						(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -Scope All
-# Ultima modifica:		16-03-2016
-# Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
-# Modifiche:
-#	0.5- il default di analisi passa alle Shared Mailbox. Per allargare lo scope sarà necessario richiamare lo script con parametro -Scope All.
-#	0.4 rev2- aggiunta funzione di Pause per evitare di intercettare il tasto CTRL.
-#	0.4 (e rev1)- correzioni minori.
-#	0.3- introduco parametri da riga di comando per modificare posizione file CSV, filtrare un solo dominio di posta elettronica o limitare i risultati da ricercare.
-#	0.2- corretti problemi di ricerca ACL sulle caselle degli utenti di posta elettronica. Ora lo script ricerca tutti i permessi Full-Access impostati sulle caselle di posta elettronica di Exchange (a prescindere che si tratti di Shared Mailbox o caselle di posta personali).
-############################################################################################################################
+<#
+	OFFICE 365: List Mailboxes User Access
+	-------------------------------------------------------------------------------------------------------------
+	Autore:					GSolone
+	Versione:				0.6
+	Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
+							(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
+							(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
+							(opzionale, numero caselle da analizzare) .\ListMailboxesUserAccess-CSV.ps1 -Count 10
+							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -Scope All
+	Info:					http://gioxx.org/tag/o365-powershell
+	Ultima modifica:		16-05-2016
+	Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
+							http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
+	Modifiche:
+	0.6- ho completamente cambiato il metodo di ricerca e analisi dei permessi, basandomi sull'originale proposto da http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/ e modificato per poter funzionare con Office 365 e PowerShell 2. Se il nome del file di output viene tenuto di default, aggiungo la data del giorno di estrazione.
+	0.5- il default di analisi passa alle Shared Mailbox. Per allargare lo scope sarà necessario richiamare lo script con parametro -Scope All.
+	0.4 rev2- aggiunta funzione di Pause per evitare di intercettare il tasto CTRL.
+	0.4 (e rev1)- correzioni minori.
+	0.3- introduco parametri da riga di comando per modificare posizione file CSV, filtrare un solo dominio di posta elettronica o limitare i risultati da ricercare.
+	0.2- corretti problemi di ricerca ACL sulle caselle degli utenti di posta elettronica. Ora lo script ricerca tutti i permessi Full-Access impostati sulle caselle di posta elettronica di Exchange (a prescindere che si tratti di Shared Mailbox o caselle di posta personali).
+	
+	-------------------------------------------------------------------------------------------------------------
+#>
 
 #Verifica parametri da prompt
 Param( 
@@ -42,13 +46,14 @@ Function Main {
 	# ATTENZIONE: utilizza (per comodità) nomi diversi nel caso in cui lo script esporti i permessi
 	# 			  delle caselle Shared piuttosto che quelle personali.
 	
+	$DataOggi = Get-Date -format yyyyMMdd
 	if ([string]::IsNullOrEmpty($CSV) -eq $true) {
 		if ( $Scope -eq "All") {
 			# Permessi di tutte le caselle
-			$ExportList = "C:\temp\MailboxPermissions.csv"
+			$ExportList = "C:\temp\MailboxPermissions_$DataOggi.csv"
 		} else { 
 			# Permessi delle Shared
-			$ExportList = "C:\temp\SharedMailboxPermissions.csv" }
+			$ExportList = "C:\temp\SharedMailboxPermissions_$DataOggi.csv" }
 	} else { $ExportList = $CSV }
 		
 	################################################################################################
@@ -83,10 +88,10 @@ Function Main {
 	
 	try
 	{
-		""
+		""; "";
 		Write-Progress -Activity "Download dati da Exchange" -Status "Verifica permessi delle caselle di posta ed esportazione risultati in $ExportList, attendi..."
 		
-		<# Ricerca di test da lanciare manualmente per verifiche
+		<# VECCHIO SCRIPT - Ricerca di test da lanciare manualmente per verifiche
 		Write-Progress -Activity "DEBUG QUERY" -Status "Se stai leggendo questo messaggio c'è qualche problema, modifica lo script per inserire nuovamente la query di Debug nella parte commentata"
 		Get-Mailbox -ResultSize 100 | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation TestQuery.csv
 		#>
@@ -100,16 +105,28 @@ Function Main {
 				Write-Host "         Counter analisi      : $Count" -f "Yellow"
 				Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
 				""
-				# Se specificato .ps1 -Domain domain.tld, filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
-				Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+				# TUTTE LE CASELLE, DOMINIO -SPECIFICATO-
+				# filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
+				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+				$Mailboxes = Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+				ForEach ($Mailbox in $Mailboxes) {
+					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
 			} else {
 				Write-Host "         Dominio da analizzare: All" -f "Yellow"
 				Write-Host "         Counter analisi      : $Count" -f "Yellow"
 				Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
 				""
-				# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-				Get-Mailbox -ResultSize $Count | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
-			}
+				# TUTTE LE CASELLE, DOMINIO -NON SPECIFICATO-
+				# esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+				$Mailboxes = Get-Mailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+				ForEach ($Mailbox in $Mailboxes) {
+					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
+				}
 		} else {
 			# Default: analisi Shared Mailbox
 			if ([string]::IsNullOrEmpty($Domain) -eq $false) {
@@ -117,15 +134,27 @@ Function Main {
 				Write-Host "         Counter analisi      : $Count" -f "Yellow"
 				Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
 				""
-				# Se specificato .ps1 -Domain domain.tld, filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
-				Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+				# SOLO -SHARED MAILBOX-, DOMINIO -SPECIFICATO-
+				# filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
+				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+				$Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+				ForEach ($Mailbox in $Mailboxes) {
+					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
 			} else {
 				Write-Host "         Dominio da analizzare: All" -f "Yellow"
 				Write-Host "         Counter analisi      : $Count" -f "Yellow"
 				Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
 				""
-				# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-				Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation $ExportList
+				# SOLO -SHARED MAILBOX-, DOMINIO -NON SPECIFICATO-
+				# esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+				$Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+				ForEach ($Mailbox in $Mailboxes) {
+					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
 			}
 		}
 		

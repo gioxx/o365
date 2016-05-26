@@ -1,15 +1,17 @@
-############################################################################################################################
-# OFFICE 365: Get MSOL User License Status (Bulk-CSV)
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				Alan Byrne (18-01-2014)
-# URL Originale:		http://gallery.technet.microsoft.com/scriptcenter/Export-a-Licence-b200ca2a
-# Versione:				0.2
-# Utilizzo:				.\GetMSOLUserLicense.ps1
-# Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		18-06-2014
-# Modifiche:			
-#	0.2- Modificata esclusivamente la formattazione mostrata durante l'esecuzione in PowerShell. Commentata la richiesta di credenziali per la connessione alla console (viene effettuata generalmente prima).
-############################################################################################################################
+<#
+	OFFICE 365: Get MSOL User License Status (Bulk-CSV)
+	---------------------------------------------------------------------------------------------------
+	Autore originale:	Alan Byrne (18-01-2014)
+	URL originale:		http://gallery.technet.microsoft.com/scriptcenter/Export-a-Licence-b200ca2a
+	
+	Modifiche:			GSolone
+	Versione:			0.2
+	Utilizzo:			.\GetMSOLUserLicense.ps1
+	Info:				http://gioxx.org/tag/o365-powershell
+	Ultima modifica:	18-06-2014
+	Modifiche:
+		0.2- modificata esclusivamente la formattazione mostrata durante l'esecuzione in PowerShell. Commentata la richiesta di credenziali per la connessione alla console (viene effettuata generalmente prima).
+#>
 
 # Define Hashtables for lookup
 $Sku = @{
@@ -32,6 +34,8 @@ $Sku = @{
 	"ENTERPRISEWITHSCAL_FACULTY" = "Office 365 (Plan A4) for Faculty"
 	"ENTERPRISEPACK_B_PILOT" = "Office 365 (Enterprise Preview)"
 	"STANDARD_B_PILOT" = "Office 365 (Small Business Preview)"
+	"VISIOCLIENT" = "Microsoft Visio Pro 2016 for Office 365"
+	"PROJECTCLIENT" = "Microsoft Project Pro 2016 for Office 365"
 	}
 		
 # The Output will be written to this file in the current working directory
@@ -41,6 +45,7 @@ $LogFile = "c:\temp\Office_365_Licenses.csv"
 # Import-Module MSOnline
 # Connect-MsolService -Credential $Office365credentials
 
+""
 Write-Host "        Office 365: Get User License Status" -foregroundcolor "green"
 Write-Host "        ------------------------------------------"
 Write-Host "          ATTENZIONE:" -foregroundcolor "red"
