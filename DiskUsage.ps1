@@ -2,7 +2,7 @@
  OFFICE 365: Check Mailbox Size on Exchange (Disk Usage)
  ----------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.1 rev1
+	Versione:				0.1 rev2
 	Utilizzo:				.\DiskUsage.ps1
 							opzionale, modifica posizione export CSV: .\DiskUsage.ps1 C:\temp\Clutter.csv
 							opzionale, singola mailbox specificata: .\DiskUsage.ps1 -Mailbox mario.rossi@contoso.com
@@ -14,6 +14,7 @@
 	Bug conosciuti:			se lo script trova una omonimia nel sistema, restituisce errore di tipo: 'La cassetta postale specificata "mario.rossi" non è univoca.'
 	Ultima modifica:		04-10-2016
 	Modifiche:				
+		0.1 rev2-	migliorata formattazione estrazione dati in CSV.
 		0.1 rev1-	correzioni minori.
 #>
 
@@ -56,7 +57,7 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 	Write-Host "        ------------------------------------------"
 	""
 	
-	Function Pause($M="Premi un tasto continuare (CTRL+C per annullare)") {
+	Function Pause($M="        Premi un tasto continuare (CTRL+C per annullare)") {
 		If($psISE) {
 			$S=New-Object -ComObject "WScript.Shell"
 			$B=$S.Popup("Fai clic su OK per continuare.",0,"In attesa dell'amministratore",0)
@@ -72,8 +73,8 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 	
 	try
 	{
-		""; Write-Host "		File CSV di destinazione: " -nonewline; Write-Host $CSV -f "Yellow"; ""
-		Write-Host "		A long time left, grab a Snickers!" -f "Yellow"
+		""; ""; Write-Host "        File CSV di destinazione: " -nonewline; Write-Host $CSV -f "Yellow"; ""
+		Write-Host "        A long time left, grab a Snickers!" -f "Yellow"
 		Write-Progress -Activity "Download dati da Exchange" -Status "Scarico occupazione disco delle caselle registrate nel sistema..."
 		# Analisi occupazione Mailbox, sort, salvataggio su file
 		Get-Mailbox -ResultSize Unlimited | Get-MailboxStatistics |
@@ -82,7 +83,7 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 		@{label="Total Size (GB)";expression={[math]::Round(`
 			# Trasformo in GB
 			($_.TotalItemSize.ToString().Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)}} |
-		Sort "Total Size (GB)" -Descending > $CSV
+		Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation
 		
 		""
 		Write-Host "Ho terminato l'esportazione dei dati." -f "Green"
