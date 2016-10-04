@@ -1,13 +1,14 @@
 ############################################################################################################################
-# OFFICE 365: Set Rules Quota to 128Kb
+# OFFICE 365: Set Rules Quota to 256 KB
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.1
+# Versione:				0.2
 # Utilizzo:				.\ModRulesQuota.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
 #						http://social.technet.microsoft.com/Forums/exchange/en-US/1b5d268f-014b-4914-ad6a-d10165262d24/rules-do-not-match
-# Ultima modifica:		22-07-2014
-# Modifiche:			-
+# Ultima modifica:		30-09-2016
+# Modifiche:			
+#	0.2- portata quota a 256K
 ############################################################################################################################
 
 #DEBUG:
@@ -15,34 +16,34 @@
 # $fileOut = $FPath + "RulesQuota_LOG.txt"
 # Get-Mailbox | foreach { 
 #
-# Set-Mailbox $_.UserPrincipalName -RulesQuota 128KB
+# Set-Mailbox $_.UserPrincipalName -RulesQuota 256KB
 # Write-Host "Set Rules Quota to 128KB: " $_.UserPrincipalName
 #
 # }|Out-File -FilePath $fileOut
 
 ""
-Write-Host "        Office 365: Set Rules Quota to 128Kb" -foregroundcolor "green"
+Write-Host "        Office 365: Set Rules Quota to 256 KB" -f "Green"
 Write-Host "        ------------------------------------------"
-Write-Host "          ATTENZIONE:" -foregroundcolor "red"
-Write-Host "          Fare molta attenzione ai possibili errori di digitazione" -foregroundcolor "red"
-Write-Host "          nei dati richiesti qui di seguito" -foregroundcolor "red"
+Write-Host "          ATTENZIONE:" -f "Red"
+Write-Host "          Fare molta attenzione ai possibili errori di digitazione" -f "Red"
+Write-Host "          nei dati richiesti qui di seguito" -f "Red"
 ""
 Write-Host "-------------------------------------------------------------------------------------------------"
-$QuotaUser = Read-Host "Utente (esempio: info@domain.tld)"
+$QuotaUser = Read-Host "Utente (esempio: info@contoso.com)"
 
 try
 	{
 		""
-		Write-Host " $QuotaUser : situazione attuale" -foregroundcolor "yellow"
+		Write-Host " $QuotaUser : situazione attuale" -f "yellow"
 		Get-Mailbox $QuotaUser | FT UserPrincipalName,RulesQuota
-		Set-Mailbox $QuotaUser -RulesQuota 128KB
-		Write-Host " $QuotaUser : nuova situazione" -foregroundcolor "green"
+		Set-Mailbox $QuotaUser -RulesQuota 256KB
+		Write-Host " $QuotaUser : nuova situazione" -f "Green"
 		Get-Mailbox $QuotaUser | FT UserPrincipalName,RulesQuota
 		""
 	}
 	catch
 	{
-		Write-Host "Errore nell'operazione, riprovare." -foregroundcolor "red"
+		Write-Host "Errore nell'operazione, riprovare." -f "Red"
 		write-host $error[0]
 		return ""
 	}

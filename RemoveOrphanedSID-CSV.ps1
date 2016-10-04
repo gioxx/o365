@@ -2,15 +2,16 @@
 # OFFICE 365: Remove Orphaned SID (Bulk, CSV)
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.4 rev1
+# Versione:				0.4 rev2
 # Utilizzo:				.\RemoveOrphanedSID-CSV.ps1
 #						(opzionale, modifica posizione file CSV) .\RemoveOrphanedSID-CSV.ps1 -csv C:\Export.CSV
 #						(opzionale, analisi singola casella) .\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com
 #						(opzionale, avvio rimozione) .\RemoveOrphanedSID-CSV.ps1 -action remove
 #						I parametri da prompt possono essere concatenati.
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		10-03-2016
+# Ultima modifica:		25-08-2016
 # Modifiche:
+#	0.4 rev2- banale modifica per correzione estetica al "Premi un tasto per continuare" (mancavano le righe vuote alla conferma).
 #	0.4 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
 #	0.4- corretto errore che non esportava in CSV temporaneo i SID orfani di una singola mailbox (.\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com)
 #	0.3- prevedo concatenamento del file CSV da utilizzare con Action di Remove. Così facendo salto l'esportazione. Esempio di utilizzo: .\RemoveOrphanedSID-CSV.ps1 -csv C:\temp\OrphanedSID.csv -action remove. Corretti errori minori, modificata indentazione dello script. Richiedo ora cancellazione della lista CSV al termine di una Action di Remove.
@@ -87,6 +88,8 @@ try
 		}
 	}
 	Pause
+	
+	"";"";
 	
 	if ([string]::IsNullOrEmpty($Action)) {
 	# Esporto i SID orfani SOLO se non è prevista una Action di Remove

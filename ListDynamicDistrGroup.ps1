@@ -2,13 +2,15 @@
 # OFFICE 365: Show Dynamic Distribution Group Users
 #----------------------------------------------------------------------------------------------------------------
 # Autore:				GSolone
-# Versione:				0.2
+# Versione:				0.3 rev1
 # Utilizzo:				.\ListDynamicDistrGroup.ps1
 #						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com
 #						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com -TXT C:\temp\group.txt
 # Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		24-02-2016
+# Ultima modifica:		16-09-2016
 # Modifiche:			
+#	0.3 rev1- mostro a video le informazioni che prima esportavo esclusivamente nel TXT finale.
+#	0.3- l'esportazione su TXT include anche l'indirizzo SMTP primario.
 #	0.2- lo script accetta adesso i parametri passati da riga di comando (-RicercaGruppo e -TXT), e permette di esportare il risultato della query su file TXT.
 ############################################################################################################################
 
@@ -41,7 +43,7 @@ Function Main {
 	{
 		Write-Progress -Activity "Download dati da Exchange" -Status "Esporto utenti in $RicercaGruppo, attendi..."
 		$members = Get-DynamicDistributionGroup -Identity $RicercaGruppo
-		Get-Recipient -RecipientPreviewFilter $members.RecipientFilter
+		Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | ft Name, PrimarySmtpAddress, Company, City
 		""
 		
 		# Esportazione risultati in TXT
@@ -58,7 +60,7 @@ Function Main {
 					$TXT = "C:\temp\$RicercaGruppo.txt"
 				}
 			Write-Host "Esporto i risultati in $TXT :" -nonewline -f "yellow"
-			Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | ft Name, Company, City > $TXT
+			Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | ft Name, PrimarySmtpAddress, Company, City > $TXT
 			Write-Host " fatto" -f "green"
 			""
 			# Richiedo apertura file TXT

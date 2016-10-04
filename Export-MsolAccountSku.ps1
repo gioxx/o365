@@ -5,13 +5,14 @@
 	URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 	
 	Modifiche:			GSolone
-	Versione:			0.2
+	Versione:			0.3
 	Utilizzo:			.\Export-MsolAccountSku.ps1
 						(opzionale, posizione CSV) .\Export-MsolAccountSku.ps1 -CSV C:\Licenze.csv
 						(opzionale, dominio da filtrare) .\Export-MsolAccountSku.ps1 -domain contoso.com
 	Info:				http://gioxx.org/tag/o365-powershell
-	Ultima modifica:	15-04-2016
+	Ultima modifica:	24-08-2016
 	Modifiche:
+		0.3- ho aggiunto il parametro UserPrincipalName all'estrazione, così da mostrare anche l'indirizzo di posta principale (generalmente corrispondente proprio a UserPrincipalName).
 		0.2- includo la possibilità di filtrare un singolo dominio da riga di comando.
 #>
 
@@ -135,6 +136,7 @@ $users | Foreach-Object {
 
 	New-Object -TypeName PSObject -Property @{
 		UserName=$_.DisplayName
+		UserPrincipalName=$_.UserPrincipalName
 		IsLicensed=$_.IsLicensed
 		Licenses=$licenses
 		<# 	Escludo i servizi di base del tenant. 
@@ -145,7 +147,7 @@ $users | Foreach-Object {
 	Per includerli nuovamente occorre togliere il commento alla riga di seguito e commentare il Select successivo,
 	mantenendo però l'Export su CSV #>
 #} | Select UserName,IsLicensed,Licenses,LicenseDetails |
-} | Select UserName,IsLicensed,Licenses | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
+} | Select UserName,UserPrincipalName,IsLicensed,Licenses | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
 
 Write-Host "Done." -f "Green"
 ""

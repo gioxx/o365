@@ -28,75 +28,80 @@ Param(
 Function Main {
 
 	""
-	Write-Host "        Office 365: Export Company Users" -f "green"
+	Write-Host "        Office 365: Export Company Users" -f "Green"
 	Write-Host "        ------------------------------------------"
 	
 	if ( [string]::IsNullOrEmpty($RicercaCompany) -and [string]::IsNullOrEmpty($RicercaDominio) )
 	{
 		# Manca dominio di ricerca e non è specificato la Company, chiedo a video il dominio da analizzare
 		$RicercaDominio = Read-Host "        Dominio da analizzare (esempio: domain.tld) "
-		""
-		Write-Host "        Dominio di ricerca: " -f "White" -nonewline; Write-Host "$RicercaDominio" -f "green"
-		Write-Progress -Activity "Download dati da Exchange" -Status "Ricerco le caselle con il dominio che mi hai richiesto, attendi..."
-		
-		#$RicercaMailbox= Get-Mailbox -ResultSize unlimited | where {$_.EmailAddresses -like "*@" + $RicercaDominio}
-		$RicercaMailbox = Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*@" + $RicercaDominio}
-		#$RicercaMailbox | FT DisplayName, UserPrincipalName, Company
-		$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company | Out-String
-		
-		# Chiedo se esportare i risultati in un file CSV
-		$ExportList = "C:\temp\$RicercaDominio.txt"
-		$message = "Devo esportare i risultati in $ExportList ?"
-		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
-		$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
-		$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
-		$ExportCSV = $host.ui.PromptForChoice("", $message, $options, 1)
-		if ($ExportCSV -eq 0) { 
-			Write-Host "Esporto l'elenco in C:\temp\$RicercaDominio.txt e apro il file (salvo errori)." -f "green"
-			$Today = [string]::Format( "{0:dd/MM/yyyy}", [datetime]::Now.Date )
-			$TimeIs = (get-date).tostring('HH:mm:ss')		
-			$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company > $ExportList
-			$a = Get-Content $ExportList
-			$b = "Esportazione utenti $RicercaDominio - $Today alle ore $TimeIs"
-			#Set-Content $ExportList –value $b, $a[0..18]
-			Set-Content $ExportList –value $b, $a		
-			Invoke-Item $ExportList
-		}
-		""		
-		Write-Host "Done." -f "green"
-		""
-	} else {
-		if ( [string]::IsNullOrEmpty($RicercaCompany) -eq $False )
-			{
-				Write-Host "        Azienda di ricerca: " -f "White" -nonewline; Write-Host "$RicercaCompany" -f "green"
-				Write-Progress -Activity "Download dati da Exchange" -Status "Ricerco le caselle con appartenenti al gruppo che mi hai richiesto, attendi..."
-				
-				$RicercaMailbox = Get-User -ResultSize Unlimited | where {$_.Company -eq "$RicercaCompany"}
-				$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company | Out-String
-				
-				# Chiedo se esportare i risultati in un file CSV
-				$ExportList = "C:\temp\$RicercaCompany.txt"
-				$message = "Devo esportare i risultati in $ExportList ?"
-				$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Esporta ora l'elenco"
-				$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Non desidero esportare ora l'elenco"
-				$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
-				$ExportCSV = $host.ui.PromptForChoice("", $message, $options, 1)
-				if ($ExportCSV -eq 0) { 
-					Write-Host "Esporto l'elenco in C:\temp\$RicercaCompany.txt e apro il file (salvo errori)." -f "green"
-					$Today = [string]::Format( "{0:dd/MM/yyyy}", [datetime]::Now.Date )
-					$TimeIs = (get-date).tostring('HH:mm:ss')		
-					$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company > $ExportList
-					$a = Get-Content $ExportList
-					$b = "Esportazione utenti $RicercaCompany - $Today alle ore $TimeIs"
-					#Set-Content $ExportList –value $b, $a[0..18]
-					Set-Content $ExportList –value $b, $a		
-					Invoke-Item $ExportList
-				}
-				""		
-				Write-Host "Done." -f "green"
-				""
+	}
+	
+	#Ricerca basata sul campo Company
+	if ( [string]::IsNullOrEmpty($RicercaCompany) -eq $False )
+		{
+			Write-Host "        Azienda di ricerca: " -f "White" -nonewline; Write-Host "$RicercaCompany" -f "Green"
+			Write-Progress -Activity "Download dati da Exchange" -Status "Ricerco le caselle con appartenenti al gruppo che mi hai richiesto, attendi..."
+			
+			$RicercaMailbox = Get-User -ResultSize Unlimited | where {$_.Company -eq "$RicercaCompany"}
+			$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company, City | Out-String
+			
+			# Chiedo se esportare i risultati in un file CSV
+			$ExportList = "C:\temp\$RicercaCompany.txt"
+			$message = "Devo esportare i risultati in $ExportList ?"
+			$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Esporta ora l'elenco"
+			$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Non desidero esportare ora l'elenco"
+			$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
+			$ExportCSV = $host.ui.PromptForChoice("", $message, $options, 1)
+			if ($ExportCSV -eq 0) { 
+				Write-Host "Esporto l'elenco in C:\temp\$RicercaCompany.txt e apro il file (salvo errori)." -f "Green"
+				$Today = [string]::Format( "{0:dd/MM/yyyy}", [datetime]::Now.Date )
+				$TimeIs = (get-date).tostring('HH:mm:ss')		
+				$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company, City > $ExportList
+				$a = Get-Content $ExportList
+				$b = "Esportazione utenti $RicercaCompany - $Today alle ore $TimeIs"
+				#Set-Content $ExportList –value $b, $a[0..18]
+				Set-Content $ExportList –value $b, $a
+				Invoke-Item $ExportList
 			}
-	}	
+			""		
+			Write-Host "Done." -f "Green"
+			""
+		}
+	
+	# Ricerca basata sul dominio
+	if ( [string]::IsNullOrEmpty($RicercaDominio) -eq $False )
+		{
+			Write-Host "        Dominio di ricerca: " -f "White" -nonewline; Write-Host "$RicercaDominio" -f "Green"
+			Write-Progress -Activity "Download dati da Exchange" -Status "Ricerco le caselle con il dominio che mi hai richiesto, attendi..."
+			
+			#$RicercaMailbox= Get-Mailbox -ResultSize unlimited | where {$_.EmailAddresses -like "*@" + $RicercaDominio}
+			$RicercaMailbox = Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*@" + $RicercaDominio}
+			#$RicercaMailbox | FT DisplayName, UserPrincipalName, Company
+			$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company, City | Out-String
+			
+			# Chiedo se esportare i risultati in un file CSV
+			$ExportList = "C:\temp\$RicercaDominio.txt"
+			$message = "Devo esportare i risultati in $ExportList ?"
+			$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
+			$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
+			$options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No)
+			$ExportCSV = $host.ui.PromptForChoice("", $message, $options, 1)
+			if ($ExportCSV -eq 0) { 
+				Write-Host "Esporto l'elenco in C:\temp\$RicercaDominio.txt e apro il file (salvo errori)." -f "Green"
+				$Today = [string]::Format( "{0:dd/MM/yyyy}", [datetime]::Now.Date )
+				$TimeIs = (get-date).tostring('HH:mm:ss')		
+				$RicercaMailbox | foreach {Get-User $_.Name} | ft DisplayName, WindowsEmailAddress, Company, City > $ExportList
+				$a = Get-Content $ExportList
+				$b = "Esportazione utenti $RicercaDominio - $Today alle ore $TimeIs"
+				#Set-Content $ExportList –value $b, $a[0..18]
+				Set-Content $ExportList –value $b, $a
+				Invoke-Item $ExportList
+			}
+			""		
+			Write-Host "Done." -f "Green"
+			""
+		}
 }
 
 # Start script
