@@ -13,6 +13,7 @@ Param(
 
 ""
 Write-Host "Indirizzi di posta elettronica associati a $SourceMailbox " -f "yellow"
+Write-Host "(ricorda: 'SMTP' determina il Primary, 'smtp' è sempre un secondario)" -f "yellow"
 # Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-Get-Recipient $SourceMailbox | Select Name -Expand EmailAddresses
+Get-Recipient $SourceMailbox | Select Name -Expand EmailAddresses | where {$_ -like 'smtp*'}
 ""

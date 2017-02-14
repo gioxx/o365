@@ -2,17 +2,19 @@
 	OFFICE 365: List Mailboxes User Access
 	-------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.6
+	Versione:				0.7
 	Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 							(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 							(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
 							(opzionale, numero caselle da analizzare) .\ListMailboxesUserAccess-CSV.ps1 -Count 10
 							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -Scope All
+							(opzionale, analisi delle caselle in un CSV) .\ListMailboxesUserAccess-CSV.ps1 -Source C:\Mailbox.csv
 	Info:					http://gioxx.org/tag/o365-powershell
-	Ultima modifica:		16-05-2016
+	Ultima modifica:		12-10-2016
 	Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
 							http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
 	Modifiche:
+	0.7- ho aggiunto la possibilità di importare un file CSV con le caselle di posta da analizzare, per generare il report degli accessi FullAccess + SendAs. Il CSV dovrà contenere una colonna con gli indirizzi di posta, il titolo in testa dovrà essere "WindowsEmailAddress"
 	0.6- ho completamente cambiato il metodo di ricerca e analisi dei permessi, basandomi sull'originale proposto da http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/ e modificato per poter funzionare con Office 365 e PowerShell 2. Se il nome del file di output viene tenuto di default, aggiungo la data del giorno di estrazione.
 	0.5- il default di analisi passa alle Shared Mailbox. Per allargare lo scope sarà necessario richiamare lo script con parametro -Scope All.
 	0.4 rev2- aggiunta funzione di Pause per evitare di intercettare il tasto CTRL.
@@ -32,7 +34,9 @@ Param(
     [Parameter(Position=2, Mandatory=$false, ValueFromPipeline=$true)] 
     [string] $Count,
 	[Parameter(Position=3, Mandatory=$false, ValueFromPipeline=$true)] 
-    [string] $Scope
+    [string] $Scope,
+	[Parameter(Position=4, Mandatory=$false, ValueFromPipeline=$true)] 
+    [string] $Source
 )
 
 #Main
@@ -65,6 +69,8 @@ Function Main {
 	Write-Host "         presente su server Exchange (default: Shared Mailbox), salvando i risultati su un file CSV" -f "White"
 	Write-Host "         '" -f "White" -nonewline; Write-Host $ExportList -f "Green" -nonewline; Write-Host "'" -f "White"
 	Write-Host "         (rilancia lo script con parametro -CSV PERCORSOFILE.CSV per modificare)." -f "White"
+	Write-Host "         (rilancia lo script con parametro -Source per analizzare una lista di caselle salvata su file CSV)." -f "White"
+	Write-Host "         (rilancia lo script con parametro -Domain contoso.com per analizzare un singolo dominio)." -f "White"
 	Write-Host "         (rilancia lo script con parametro -Scope All per analizzare tutte le caselle, non solo le Shared)." -f "White"
 	""
 	
@@ -98,64 +104,86 @@ Function Main {
 		
 		if ([string]::IsNullOrEmpty($Count) -eq $true) { $Count = "Unlimited" }
 		
-		if ( $Scope -eq "All") {
-			# Richiesta analisi di tutte le caselle di posta elettronica
-			if ([string]::IsNullOrEmpty($Domain) -eq $false) {
-				Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
-				Write-Host "         Counter analisi      : $Count" -f "Yellow"
-				Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
-				""
-				# TUTTE LE CASELLE, DOMINIO -SPECIFICATO-
-				# filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
-				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
-				$Mailboxes = Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
-				ForEach ($Mailbox in $Mailboxes) {
-					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
-					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
+		if ([string]::IsNullOrEmpty($Source) -eq $true) {
+			# Campo Source non specificato, procedo con i parametri passati a riga di comando
+			
+			if ( $Scope -eq "All") {
+				# Richiesta analisi di tutte le caselle di posta elettronica
+				if ([string]::IsNullOrEmpty($Domain) -eq $false) {
+					Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
+					Write-Host "         Counter analisi      : $Count" -f "Yellow"
+					Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
+					""
+					# TUTTE LE CASELLE, DOMINIO -SPECIFICATO-
+					# filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
+					"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+					$Mailboxes = Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+					ForEach ($Mailbox in $Mailboxes) {
+						$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+						$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+						$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
+				} else {
+					Write-Host "         Dominio da analizzare: All" -f "Yellow"
+					Write-Host "         Counter analisi      : $Count" -f "Yellow"
+					Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
+					""
+					# TUTTE LE CASELLE, DOMINIO -NON SPECIFICATO-
+					# esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+					"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+					$Mailboxes = Get-Mailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+					ForEach ($Mailbox in $Mailboxes) {
+						$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+						$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+						$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
+					}
 			} else {
-				Write-Host "         Dominio da analizzare: All" -f "Yellow"
-				Write-Host "         Counter analisi      : $Count" -f "Yellow"
-				Write-Host "         Scope analisi        : All. Verranno analizzate tutte le caselle di posta." -f "Yellow"
-				""
-				# TUTTE LE CASELLE, DOMINIO -NON SPECIFICATO-
-				# esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
-				$Mailboxes = Get-Mailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
-				ForEach ($Mailbox in $Mailboxes) {
-					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
-					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
+				# Default: analisi Shared Mailbox
+				if ([string]::IsNullOrEmpty($Domain) -eq $false) {
+					Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
+					Write-Host "         Counter analisi      : $Count" -f "Yellow"
+					Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
+					""
+					# SOLO -SHARED MAILBOX-, DOMINIO -SPECIFICATO-
+					# filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
+					"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+					$Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+					ForEach ($Mailbox in $Mailboxes) {
+						$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+						$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+						$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
+				} else {
+					Write-Host "         Dominio da analizzare: All" -f "Yellow"
+					Write-Host "         Counter analisi      : $Count" -f "Yellow"
+					Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
+					""
+					# SOLO -SHARED MAILBOX-, DOMINIO -NON SPECIFICATO-
+					# esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
+					"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+					$Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+					ForEach ($Mailbox in $Mailboxes) {
+						$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+						$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+						$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
 				}
-		} else {
-			# Default: analisi Shared Mailbox
-			if ([string]::IsNullOrEmpty($Domain) -eq $false) {
-				Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
-				Write-Host "         Counter analisi      : $Count" -f "Yellow"
-				Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
-				""
-				# SOLO -SHARED MAILBOX-, DOMINIO -SPECIFICATO-
-				# filtro solo il dominio richiesto (oltre le NT AUTHORITY\SELF e S-1-5*)
-				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
-				$Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
-				ForEach ($Mailbox in $Mailboxes) {
-					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
-					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
-			} else {
-				Write-Host "         Dominio da analizzare: All" -f "Yellow"
-				Write-Host "         Counter analisi      : $Count" -f "Yellow"
-				Write-Host "         Scope analisi        : Default. Verranno analizzate le Shared Mailbox." -f "Yellow"
-				""
-				# SOLO -SHARED MAILBOX-, DOMINIO -NON SPECIFICATO-
-				# esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-				"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
-				$Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
-				ForEach ($Mailbox in $Mailboxes) {
-					$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-					$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
-					$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
 			}
+			
+		} else {
+			# Source non è vuoto, prendo in carico il file CSV e analizzo le caselle al suo interno
+			if ([string]::IsNullOrEmpty($CSV) -eq $true) {
+				$ExportList = "C:\temp\MailboxPermissions_$DataOggi.csv"
+			} else { $ExportList = $CSV }
+	
+			Write-Host "         File CSV sorgente spefificato: $Source" -f "Yellow"
+			Write-Host "         File CSV di destinazione     : $ExportList" -f "Yellow"
+			""
+			"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
+			Import-Csv $Source | ForEach-Object {
+				$Mailbox = Get-Mailbox $_.WindowsEmailAddress | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+				$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+				$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+				$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append
+			}
+			
 		}
 		
 		Write-Host "Done." -f "Green"

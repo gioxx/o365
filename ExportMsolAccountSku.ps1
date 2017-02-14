@@ -5,13 +5,14 @@
 	URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 	
 	Modifiche:			GSolone
-	Versione:			0.3
+	Versione:			0.4
 	Utilizzo:			.\Export-MsolAccountSku.ps1
 						(opzionale, posizione CSV) .\Export-MsolAccountSku.ps1 -CSV C:\Licenze.csv
 						(opzionale, dominio da filtrare) .\Export-MsolAccountSku.ps1 -domain contoso.com
 	Info:				http://gioxx.org/tag/o365-powershell
-	Ultima modifica:	24-08-2016
+	Ultima modifica:	10-02-2017
 	Modifiche:
+		0.4- corretto errore nel "-f" quando si specifica un dominio di ricerca. Forzo un nome del CSV diverso se si specifica il dominio di ricerca.
 		0.3- ho aggiunto il parametro UserPrincipalName all'estrazione, così da mostrare anche l'indirizzo di posta principale (generalmente corrispondente proprio a UserPrincipalName).
 		0.2- includo la possibilità di filtrare un singolo dominio da riga di comando.
 #>
@@ -25,20 +26,6 @@ Param(
 )
 	
 # Main
-
-	<#	Puoi modificare il valore $CSV per impostare un diverso nome del file CSV che verrà
-		esportato dallo script (solo ciò che c'è tra le virgolette, ad esempio
-		$CSV = "C:\temp\licenze.csv" (per modificare anche la cartella di esportazione), 
-		oppure $CSV = "Licenze.csv" per salvare il file nella stessa cartella dello script.
-		ATTENZIONE: utilizza (per comodità) nomi diversi nel caso in cui lo script esporti i permessi
-					delle caselle Shared piuttosto che quelle personali. 
-	#>
-	if ([string]::IsNullOrEmpty($CSV) -eq $true) {
-		# CSV non specificato
-		$CSV = "C:\temp\O365-User-License-Report.csv"
-	}
-	<# ------------------------------------------------------------------------------------------------ #>
-	
 ""
 Write-Host "        Office 365: User License Report" -foregroundcolor "Green"
 Write-Host "        ------------------------------------------"
@@ -68,14 +55,24 @@ Pause
 Write-Progress -Activity "Download dati da Exchange" -Status "Scarico i dati relativi alle licenze, attendi."
 ""
 
-if ([string]::IsNullOrEmpty($Domain) -eq $true) {
+if ([string]::IsNullOrEmpty($Domain)) {
 		# Dominio non specificato, analizzo tutti gli utenti del server Exchange
 		$users = Get-MsolUser -All | Where-Object { $_.isLicensed -eq "TRUE" }
 	} else {
 		# Dominio specificato, lo esporto in maniera esclusiva
+		# Se non specifico il CSV, il nome integra il dominio di ricerca
+		if ([string]::IsNullOrEmpty($CSV)) {
+			$CSV = "C:\temp\O365-User-License-Report_$($Domain).csv"
+		}
 		""
-		Write-Host "         Dominio specificato: " -f -nonewline; Write-Host "$Domain" -f "Yellow"
+		Write-Host "         Dominio specificato: " -nonewline; Write-Host "$Domain" -f "Yellow"
+		Write-Host "         CSV di destinazione: " -nonewline; Write-Host "$CSV" -f "Yellow"
 		$users = Get-MsolUser -All | Where-Object { $_.isLicensed -eq "TRUE" -and $_.UserPrincipalName -like "*@" + $Domain }
+	}
+	
+# Se il CSV non è stato precedentemente specificato, utilizzo posizione e nome di default	
+if ([string]::IsNullOrEmpty($CSV)) {
+		$CSV = "C:\temp\O365-User-License-Report.csv"
 	}
 
 $users | Foreach-Object {
@@ -118,6 +115,7 @@ $users | Foreach-Object {
 				default { $licName = $license.Accountskuid.tostring() }
 			}
 			if ( $licenses ) { $licenses = ($licenses + ',' + $licName) } else { $licenses = $licName }
+			#$licenses = $licName
 			
 			# Servizi
 			ForEach ($row in $($license.servicestatus)) {
@@ -141,12 +139,12 @@ $users | Foreach-Object {
 		Licenses=$licenses
 		<# 	Escludo i servizi di base del tenant. 
 			Per includerli nuovamente occorre togliere il commento alla riga di seguito #>
-		#LicenseDetails=$licenseDetail
+		LicenseDetails=$licenseDetail
 	}
 <# 	Il Select finale non tiene conto dei servizi di base del tenant. 
 	Per includerli nuovamente occorre togliere il commento alla riga di seguito e commentare il Select successivo,
 	mantenendo però l'Export su CSV #>
-#} | Select UserName,IsLicensed,Licenses,LicenseDetails |
+#} | Select UserName,IsLicensed,Licenses,LicenseDetails | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
 } | Select UserName,UserPrincipalName,IsLicensed,Licenses | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
 
 Write-Host "Done." -f "Green"
