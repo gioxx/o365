@@ -1,16 +1,17 @@
-############################################################################################################################
-# OFFICE 365: Set User Out of Office
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				GSolone
-# Versione:				0.1
-# Utilizzo:				.\SetOoO.ps1
-#			(opzionale, passaggio dati da prompt) .\SetOoO.ps1 user@contoso.com -Status Disabled
-#			(opzionale, passaggio dati da prompt) .\SetOoO.ps1 user@contoso.com -Int "Testo per interni" -Ext "Testo per esterni"
-#			(opzionale, passaggio dati da prompt) .\SetOoO.ps1 user@contoso.com -Start "07/03/2016 08:00:00" -End "14/03/2016 08:00:00"
-# Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		02-03-2016
-# Modifiche:			-
-############################################################################################################################
+<#
+	OFFICE 365: Set User Out of Office
+	----------------------------------------------------------------------------------------------------------------
+	Autore:				GSolone
+	Versione:			0.2
+	Utilizzo:			.\SetOoO.ps1
+						(opzionale, passaggio dati da prompt) .\SetOoO.ps1 user@contoso.com -Status Disabled
+						(opzionale, passaggio dati da prompt) .\SetOoO.ps1 user@contoso.com -Int "Testo per interni" -Ext "Testo per esterni"
+						(opzionale, passaggio dati da prompt) .\SetOoO.ps1 user@contoso.com -Start "07/03/2016 08:00:00" -End "14/03/2016 08:00:00"
+	Info:				http://gioxx.org/tag/o365-powershell
+	Ultima modifica:	27-03-2017
+	Modifiche:
+		0.2- Ho aggiunto il "New-Variable dtmDate -Option AllScope" per intercettare correttamente il parametro data inizio e fine periodo di assenza quando mostro il popup grafico del calendario.
+#>
 
 # Verifica parametri da prompt
 Param( 
@@ -57,6 +58,8 @@ $objCalendar.ShowTodayCircle = $True
 $objCalendar.MaxSelectionCount = 1
 $objForm.Controls.Add($objCalendar) 
 $objForm.Topmost = $True
+
+New-Variable dtmDate -Option AllScope
 
 # Inizio script principale
 
@@ -130,16 +133,21 @@ try
 	if ($PermissionType -eq 1) {
 		""
 		Write-Host "Seleziona ora nel popup il primo giorno di ferie e premi invio" -f "Cyan"
-		$objForm.Text = "Seleziona la data di inizio OoO (primo giorno di assenza)"
+		$objForm.Text = "Seleziona la data di inizio OoO (primo giorno di assenza) o premi ESC per ignorare"
 		$objForm.Add_Shown({$objForm.Activate()})  
 		[void] $objForm.ShowDialog() 
 		$Start=$dtmDate
+		if ($dtmDate) {
+			Write-Host "Data selezionata: $dtmDate"
+		}
 		Write-Host "Seleziona ora nel popup l'ultimo giorno di ferie e premi invio" -f "Cyan"
-		""
-		$objForm.Text = "Seleziona la data di fine OoO (ultimo giorno di assenza)"
+		$objForm.Text = "Seleziona la data di fine OoO (ultimo giorno di assenza) o premi ESC per ignorare"
 		$objForm.Add_Shown({$objForm.Activate()})  
 		[void] $objForm.ShowDialog() 
 		$End=$dtmDate
+		if ($dtmDate) {
+			Write-Host "Data selezionata: $dtmDate"
+		}
 	}
 	
 	# Verifica flag di attivazione o disattivazione (default: Enabled).

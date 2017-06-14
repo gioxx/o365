@@ -1,23 +1,24 @@
-﻿############################################################################################################################
-# OFFICE 365: Add Mailbox Permission (Full Access / SendAs / GrantSendOnBehalfTo / Auto-mapping)
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				GSolone
-# Versione:				0.10
-# Utilizzo:				.\AddMailboxPermission.ps1
-#						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com
-# Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		13-11-2015
-# Modifiche:
-#	0.10- includo un blocco di verifica permessi finali (a operazione di ADD terminata) così da verificare gli utenti con accesso alla casella di posta (FullAccess e SendAs), escludendo NT AUTHORITY\SELF e S-1-5* (utenti non più presenti nel sistema).
-#	0.9- corretto variabile GiveAccessTo (riportata male nell'IF di controllo Empty String)
-#	0.8- corretto if-else di richiesta informazioni da prompt.
-#	0.7- lo script accetta adesso i parametri passati da riga di comando (-SourceMailbox e -GiveAccessTo)
-#	0.6- correzioni minori. Messo meglio in evidenza i dettagli riguardanti il "Send As" e il "Send on Behalf to".
-#	0.5- modificata la richiesta di GrantSendOnBehalfTo che ora viene mostrata solo se si rifiuta il SendAs.
-#	0.4- aggiungo la possibilità di specificare se l'utente deve inviare con proprietà Grantsendonbehalfto e non SendAs completo.
-#	0.3- prevedo la possibilità di scegliere l'auto-mapping della casella su Outlook, non utile nel caso di ShaRed Mailbox che impedirebbero in seguito la ricerca nelle sottocartelle.
-#	0.2- rev1/rev4-correpzioni minori, inclusa adesso la possibilità di modificare ulteriormente le ACL dando anche accesso "Invia Come" (SendAs).
-############################################################################################################################
+﻿<#
+	OFFICE 365: Add Mailbox Permission (Full Access / SendAs / GrantSendOnBehalfTo / Auto-mapping)
+	----------------------------------------------------------------------------------------------------------------
+	Autore:				GSolone
+	Versione:			0.11
+	Utilizzo:			.\AddMailboxPermission.ps1
+						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com (oppure .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com)
+	Info:				http://gioxx.org/tag/o365-powershell
+	Ultima modifica:	27-03-2017
+	Modifiche:
+		0.11- ho solo modificato il Get-MailboxPermission finale.
+		0.10- includo un blocco di verifica permessi finali (a operazione di ADD terminata) così da verificare gli utenti con accesso alla casella di posta (FullAccess e SendAs), escludendo NT AUTHORITY\SELF e S-1-5* (utenti non più presenti nel sistema).
+		0.9- corretto variabile GiveAccessTo (riportata male nell'IF di controllo Empty String)
+		0.8- corretto if-else di richiesta informazioni da prompt.
+		0.7- lo script accetta adesso i parametri passati da riga di comando (-SourceMailbox e -GiveAccessTo)
+		0.6- correzioni minori. Messo meglio in evidenza i dettagli riguardanti il "Send As" e il "Send on Behalf to".
+		0.5- modificata la richiesta di GrantSendOnBehalfTo che ora viene mostrata solo se si rifiuta il SendAs.
+		0.4- aggiungo la possibilità di specificare se l'utente deve inviare con proprietà Grantsendonbehalfto e non SendAs completo.
+		0.3- prevedo la possibilità di scegliere l'auto-mapping della casella su Outlook, non utile nel caso di ShaRed Mailbox che impedirebbero in seguito la ricerca nelle sottocartelle.
+		0.2- rev1/rev4-correpzioni minori, inclusa adesso la possibilità di modificare ulteriormente le ACL dando anche accesso "Invia Come" (SendAs).
+#>
 
 #Verifica parametri da prompt
 Param( 
@@ -103,7 +104,8 @@ try
 	Write-Host "All Done!" -f "Green"
 	Write-Host "Riepilogo accessi alla casella di $SourceMailbox " -f "yellow"
 	# Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
-	Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | ft User, "Access Rights" | out-string
+	#Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | ft User, "Access Rights" | out-string
+	Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,AccessRights | ft User,AccessRights | out-string
 	Get-RecipientPermission $SourceMailbox -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | ft Trustee, AccessRights | out-string
 }
 catch

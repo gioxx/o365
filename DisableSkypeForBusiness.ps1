@@ -1,14 +1,21 @@
-﻿############################################################################################################################
-# OFFICE 365: Disable Skype for Business (Bulk, All Users)
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				GSolone
-# Versione:				0.1
-# Utilizzo:				.\DisableSkypeForBusiness.ps1
-# Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		10-03-2016
-# Modifiche:			
-#	0.1 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
-############################################################################################################################
+﻿<#
+	OFFICE 365: Disable Skype for Business (Bulk, All Users)
+	----------------------------------------------------------------------------------------------------------------
+	Autore:				GSolone
+	Versione:			0.2
+	Utilizzo:			.\DisableSkypeForBusiness.ps1 -Company CONTOSO (a CONTOSO dovrai sostituire l'identificativo della tua azienda per modificare correttamente i pacchetti di licenza)
+	Info:				http://gioxx.org/tag/o365-powershell
+	Ultima modifica:	11-04-2017
+	Modifiche:			
+		0.2- introdotto il parametro Company per modificare correttamente i pacchetti di licenza aziendali (l'identificativo è unico per ciascun cliente Office 365), di conseguenza modificato il metodo per comporre la nuova licenza. Ho poi modificato il messaggio finale di controllo dell'utenza a campione con l'apertura della console di amministrazione Lync tramite il browser predefinito di sistema.
+		0.1 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
+#>
+
+#Verifica parametri da prompt
+Param( 
+    [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true)] 
+    [string] $Company 
+)
 
 #Main
 Function Main {
@@ -44,17 +51,26 @@ Function Main {
 		Get-MsolAccountSku | ft AccountSkuId, ActiveUnits, WarningUnits, ConsumedUnits -AutoSize | out-string
 		
 		Write-Progress -Activity "Scambio dati con Exchange" -Status "Assegnazione nuova licenza E1"
+		
+		################################################
+		# MODIFICA LICENZE E1
+		################################################
 
 		Write-Host "Elenco servizi legati a licenza E1" -f "yellow"
 		Get-MsolAccountSku | Where-Object {$_.SkuPartNumber -eq "STANDARDPACK"} | ForEach-Object {$_.ServiceStatus} | out-string
 
 		Write-Host "Elenco utenze registrate con licenza E1" -f "yellow"
-		$O365E1Licences = New-MsolLicenseOptions -AccountSkuId messita:STANDARDPACK -DisabledPlans MCOSTANDARD
-		Get-MsolUser -all | where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "messita:STANDARDPACK"} | ft UserPrincipalName, DisplayName, isLicensed -AutoSize | out-string
+		$command = '$O365E1Licences = New-MsolLicenseOptions -AccountSkuId ' + $Company + ':STANDARDPACK -DisabledPlans MCOSTANDARD'
+		iex $command
+		Get-MsolUser -all | where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "$($Company):STANDARDPACK"} | ft UserPrincipalName, DisplayName, isLicensed -AutoSize | out-string
 
 		Write-Host "Disabilito Skype for Business sulle licenze E1 ... " -f "yellow" -nonewline
-		Get-MsolUser -all |  where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "messita:STANDARDPACK"} | Set-MsolUserLicense -LicenseOptions $O365E1Licences
+		Get-MsolUser -all |  where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "$($Company):STANDARDPACK"} | Set-MsolUserLicense -LicenseOptions $O365E1Licences
 		Write-Host " fatto" -f "green" -nonewline; Write-Host "."
+		
+		################################################
+		# MODIFICA LICENZE E3
+		################################################
 
 		Write-Progress -Activity "Scambio dati con Exchange" -Status "Assegnazione nuova licenza E3"
 		
@@ -62,16 +78,18 @@ Function Main {
 		Get-MsolAccountSku | Where-Object {$_.SkuPartNumber -eq "ENTERPRISEPACK"} | ForEach-Object {$_.ServiceStatus} | out-string
 		
 		Write-Host "Elenco utenze registrate con licenza E3" -f "yellow"
-		$O365E3Licences = New-MsolLicenseOptions -AccountSkuId messita:ENTERPRISEPACK -DisabledPlans MCOSTANDARD
-		Get-MsolUser -all | where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "messita:ENTERPRISEPACK"} | ft UserPrincipalName, DisplayName, isLicensed -AutoSize | out-string
+		$command = '$O365E3Licences = New-MsolLicenseOptions -AccountSkuId ' + $Company + ':ENTERPRISEPACK -DisabledPlans MCOSTANDARD'
+		iex $command
+		Get-MsolUser -all | where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "$($Company):ENTERPRISEPACK"} | ft UserPrincipalName, DisplayName, isLicensed -AutoSize | out-string
 
 		Write-Host "Disabilito Skype for Business sulle licenze E3 ... " -f "yellow" -nonewline
-		Get-MsolUser -all |  where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "messita:ENTERPRISEPACK"} | Set-MsolUserLicense -LicenseOptions $O365E3Licences
+		Get-MsolUser -all |  where {$_.isLicensed -eq "True" -and $_.licenses[0].accountskuid.tostring() -eq "$($Company):ENTERPRISEPACK"} | Set-MsolUserLicense -LicenseOptions $O365E3Licences
 		Write-Host " fatto" -f "green" -nonewline; Write-Host "."
+		
+		
 		""; "";
-		Write-Host "Verifica almeno un'utenza per ciascuna licenza sulla GUI di Exchange. Vai in"
-		Write-Host "modifica della licenza, espandi i pacchetti assegnati dalla licenza e verifica che"
-		Write-Host "non compaia il segno di spunta in corrispondenza di Skype for Business."
+		Write-Host "Avvio il browser per verificare se gli utenti compaiono in console ..."
+		Start-Process -FilePath "https://admin0e.online.lync.com/LSCP/Users.aspx"
 		""
 		
 	}

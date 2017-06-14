@@ -1,19 +1,20 @@
 <#
-	OFFICE 365: "Get-MessageTrace by Mail Subject"
+	OFFICE 365: "Get MessageTrace by Mail Subject"
 	---------------------------------------------------------------------------------------------------
 	Autore originale:	Joe Palarchio (25 feb. 2016)
 	URL originale:		http://blogs.perficient.com/microsoft/2016/03/office-365-script-to-perform-message-trace-by-subject/
 	Limitazioni:		Search query is limited to 5,000,000 entries
 	
 	Modifiche:			GSolone
-	Versione:			0.1 (versione script originale: 1.1)
-	Utilizzo:			.\Get-MessageTraceBySubject.ps1
-						(OBBLIGATORIO, oggetto mail da filtrare) .\Get-MessageTraceBySubject.ps1 -Subject "Hello Mario!"
-						(OBBLIGATORIO, numeri giorni di ricerca) .\Get-MessageTraceBySubject.ps1 -Days 5
-						(opzionale, posizione file di log) .\Get-MessageTraceBySubject.ps1 -LogFile C:\MessageTrace.txt
+	Versione:			0.1 rev1 (versione script originale: 1.1)
+	Utilizzo:			.\MessageTraceBySubject.ps1
+						(OBBLIGATORIO, oggetto mail da filtrare) .\MessageTraceBySubject.ps1 -Subject "Hello Mario!"
+						(OBBLIGATORIO, numeri giorni di ricerca) .\MessageTraceBySubject.ps1 -Days 5
+						(opzionale, posizione file di log) .\MessageTraceBySubject.ps1 -LogFile C:\MessageTrace.txt
 	Info:				http://gioxx.org/tag/o365-powershell
 	Ultima modifica:	14-02-2017
-	Modifiche:			-
+	Modifiche:			
+		0.1 rev1- ho solo cambiato nome al file, al pari di tutti gli altri della cartella.
 #>
 
 Param(
