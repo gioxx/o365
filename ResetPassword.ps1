@@ -1,16 +1,17 @@
-############################################################################################################################
-# OFFICE 365: Reset User Password from PowerShell
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				GSolone
-# Versione:				0.2
-# Utilizzo:				.\ResetPassword.ps1
-#						(opzionale, passaggio dati da prompt) .\ResetPassword.ps1 mario.rossi@contoso.com
-# Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		30-10-2015
-# Fonti utilizzate:		http://blogs.technet.com/b/heyscriptingguy/archive/2013/06/03/generating-a-new-password-with-windows-powershell.aspx
-# Modifiche:			
-#	0.2- consente il passaggio del dato di casella di posta da modificare (es. .\ResetPassword.ps1 mario.rossi@contoso.com
-############################################################################################################################
+<#
+	OFFICE 365: Reset User Password from PowerShell
+	----------------------------------------------------------------------------------------------------------------
+	Autore:				GSolone
+	Versione:			0.2 rev1
+	Utilizzo:			.\ResetPassword.ps1
+						(opzionale, passaggio dati da prompt) .\ResetPassword.ps1 mario.rossi@contoso.com
+	Info:				https://gioxx.org/tag/o365-powershell
+	Ultima modifica:	22-06-2017
+	Fonti utilizzate:	http://blogs.technet.com/b/heyscriptingguy/archive/2013/06/03/generating-a-new-password-with-windows-powershell.aspx
+	Modifiche:
+		0.2 rev1- banale modifica estetica, la scelta non ha un default (ho rimosso il "default: 1").
+		0.2- consente il passaggio del dato di casella di posta da modificare (es. .\ResetPassword.ps1 mario.rossi@contoso.com
+#>
 
 #Verifica parametri da prompt
 Param( 
@@ -74,7 +75,7 @@ Function Main {
 	do {
 		try {
 			$numOk = $true
-			[int]$ChangePasswd = Read-Host "Operazione scelta (default: 1) "
+			[int]$ChangePasswd = Read-Host "Operazione scelta"
 		} # end try
 		catch {$numOK = $false}
 		} # end do 
