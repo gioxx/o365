@@ -1,84 +1,99 @@
-############################################################################################################################
-# OFFICE 365: Get Message Trace
-#----------------------------------------------------------------------------------------------------------------
-# Autore:				GSolone
-# Versione:				0.1
-# Utilizzo:				.\MessageTrace.ps1
-# Info:					http://gioxx.org/tag/o365-powershell
-# Ultima modifica:		09-10-2014
-# Modifiche:			-
-############################################################################################################################
-# Sources:				http://technet.microsoft.com/it-it/library/jj200704%28v=exchg.150%29.aspx
-#						http://community.office365.com/en-us/f/148/t/239828.aspx
-#						http://en.community.dell.com/techcenter/powergui/f/4834/t/19571829
-#						https://gallery.technet.microsoft.com/office/Office-365-Mail-Traffic-afa37da1
-#
+<#
+	OFFICE 365: Get Message Trace (Single User or Mail Domain)
+	----------------------------------------------------------------------------------------------------------------
+	Autore:				GSolone
+	Versione:			0.2
+	Utilizzo:			.\MessageTrace.ps1
+						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com (oppure .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com)
+	Info:				http://gioxx.org/tag/o365-powershell
+	Sources:			http://technet.microsoft.com/it-it/library/jj200704%28v=exchg.150%29.aspx
+						http://community.office365.com/en-us/f/148/t/239828.aspx
+						http://en.community.dell.com/techcenter/powergui/f/4834/t/19571829
+						https://gallery.technet.microsoft.com/office/Office-365-Mail-Traffic-afa37da1
+	Ultima modifica:	06-07-2017
+	Modifiche:
+		0.2- rivisto lo script. Ora accetta parametri e permette di filtrare il singolo utente piuttosto che l'intero dominio. 
+#>
+
+#Verifica parametri da prompt
+Param( 
+    [Parameter(Position=0, Mandatory=$false, ValueFromPipeline=$true)] 
+    [string] $Domain, 
+    [Parameter(Position=1, Mandatory=$false, ValueFromPipeline=$true)] 
+    [string] $User
+)
 
 #Main
 Function Main {
 
 	""
-	Write-Host "        Office 365: Get Message Trace" -foregroundcolor "green"
-	Write-Host "-------------------------------------------------------------------------------------------------"
-	""
-	$RicercaDominio = Read-Host "Dominio da analizzare (esempio: domain.tld) "
-	""
+	Write-Host "        Office 365: Get Message Trace" -f "Green"
 	Write-Host "        ------------------------------------------"
-	Write-Host "          ATTENZIONE:" -foregroundcolor "red"
-	Write-Host "          Specificare ora la data di inizio e di fine per scaricare i log," -foregroundcolor "red"
-	Write-Host "          dichiarandola come mm/gg/aaaa (americana), ad esempio 10/01/2014" -foregroundcolor "red"
-	Write-Host "          corrisponde al 10 gennaio 2014" -foregroundcolor "red"
 	""
+	
+	if ( [string]::IsNullOrEmpty($Domain) -eq $false ) { 
+		$TargetRicerca = "*@" + $Domain
+		Write-Host "	Target di ricerca: *@$($Domain)" -f "Yellow" }
+	if ( [string]::IsNullOrEmpty($User) -eq $false ) {
+		$TargetRicerca = $User
+		Write-Host "	Target di ricerca: $User" -f "Yellow" }
+	if ( [string]::IsNullOrEmpty($Domain) -AND [string]::IsNullOrEmpty($User) ) { 
+		$TargetRicerca = "*@contoso.com"
+		Write-Host "	Dominio non specificato, imposto su contoso.com (DEMO)" -f "Yellow"; "";
+		Write-Host "	Puoi terminare lo script con la combinazione CTRL + C" -f "Cyan" }
+		
+	""; Write-Host "	ATTENZIONE:" -f "red"
+	Write-Host "	Specificare ora la data di inizio e di fine per scaricare i log," -f "Red"
+	Write-Host "	dichiarandola come mm/gg/aaaa (americana), ad esempio 10/01/2014" -f "Red"
+	Write-Host "	corrisponde al 10 gennaio 2014" -f "Red"; "";
 	$DataInizio = Read-Host "Intervallo di analisi, data e ora di inizio (esempio: 10/01/2014 17:00)  "
 	$DataFine = Read-Host "Intervallo di analisi, data e ora di fine   (esempio: 10/10/2014 19:00)  "
 	
-	$TargetRicerca = "*@" + $RicercaDominio
 	$CurrentDate = Get-Date
 	$CurrentDate = $CurrentDate.ToString('ddMMyyyy_hhmmss')
 	if((Test-Path c:\temp) -eq 0) { new-item -type directory -path c:\temp }
+	$NomeFile = $TargetRicerca -replace '[#?\{@*]', ''
 	
 	try
 	{
-		""
-		Write-Host "Ricerco tutte le mail inviate dal dominio $RicercaDominio, porta pazienza." -foregroundcolor "yellow"
-		#Get-MessageTrace -SenderAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000 | select Received,*Address | Export-Csv -Path "C:\temp\$RicercaDominio-outgoing-$CurrentDate.csv"
+		""; Write-Host "Ricerco tutte le mail inviate da $TargetRicerca, porta pazienza." -f "Yellow"
 		$IngoingTotale = $null 
 		$PagineIngoing = 1
 		do 
 			{ 
 				Write-Host "Raccolta risultati - Pagina $PagineIngoing..." 
-				$BloccoIngoingAttuale = Get-MessageTrace -SenderAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000 -Page $PagineIngoing | Select Received,*Address
+				$BloccoIngoingAttuale = Get-MessageTrace -SenderAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000 -Page $PagineIngoing | Select Received,*Address,Subject
+				<#	Nel caso non si voglia tracciare l'oggetto delle mail, togliere "Subject" nella Select, come di seguito:
+					$BloccoIngoingAttuale = Get-MessageTrace -SenderAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000 -Page $PagineIngoing | Select Received,*Address
+				#>
 				$PagineIngoing++
 				$IngoingTotale += $BloccoIngoingAttuale
 			} 
 		until ($BloccoIngoingAttuale -eq $null)
-		$IngoingTotale | Where-Object {$_} | Export-Csv C:\temp\$RicercaDominio-outgoing-$CurrentDate.csv -NoTypeInformation
+		$IngoingTotale | Where-Object {$_} | Export-Csv C:\temp\$NomeFile-outgoing-$CurrentDate.csv -NoTypeInformation
 		
-		""
-		Write-Host "Ricerco tutte le mail ricevute dal dominio $RicercaDominio, porta pazienza." -foregroundcolor "yellow"
-		#Get-MessageTrace -RecipientAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000  | select Received,*Address | Export-Csv -Path "C:\temp\$RicercaDominio-ingoing-$CurrentDate.csv"
+		""; Write-Host "Ricerco tutte le mail ricevute da $TargetRicerca, porta pazienza." -f "Yellow"
 		$OutgoingTotale = $null 
 		$PagineOutgoing = 1
 		do 
 			{ 
 				Write-Host "Raccolta risultati - Pagina $PagineOutgoing..." 
-				$BloccoOutgoingAttuale = Get-MessageTrace -RecipientAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000 -Page $PagineOutgoing | Select Received,*Address
+				$BloccoOutgoingAttuale = Get-MessageTrace -RecipientAddress $TargetRicerca -StartDate "$DataInizio" -EndDate "$DataFine" -PageSize 5000 -Page $PagineOutgoing | Select Received,*Address,Subject
 				$PagineOutgoing++
 				$OutgoingTotale += $BloccoOutgoingAttuale
 			} 
 		until ($BloccoOutgoingAttuale -eq $null)
-		$OutgoingTotale | Where-Object {$_} | Export-Csv C:\temp\$RicercaDominio-ingoing-$CurrentDate.csv -NoTypeInformation
+		$OutgoingTotale | Where-Object {$_} | Export-Csv C:\temp\$NomeFile-ingoing-$CurrentDate.csv -NoTypeInformation
 		
-		""
-		Write-Host "Done." -foregroundcolor "green"
+		""; Write-Host "Done." -f "green"
 		Write-Host "Puoi trovare i file CSV rispettivamente in"
-		Write-Host "  - C:\temp\$RicercaDominio-outgoing-$CurrentDate.csv"
-		Write-Host "  - C:\temp\$RicercaDominio-ingoing-$CurrentDate.csv"
+		Write-Host "  - C:\temp\$NomeFile-outgoing-$CurrentDate.csv"
+		Write-Host "  - C:\temp\$NomeFile-ingoing-$CurrentDate.csv"
 		""
 	}
 	catch
 	{
-		Write-Host "Errore nell'operazione, riprovare." -foregroundcolor "red"
+		Write-Host "Errore nell'operazione, riprovare." -f "red"
 		write-host $error[0]
 		return ""
 	}
@@ -87,3 +102,5 @@ Function Main {
 
 # Start script
 . Main
+
+Function OutOfThere {}
