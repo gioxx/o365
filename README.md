@@ -37,6 +37,14 @@ Ogni script è stato poi provato e revisionato per funzionare anche con le nuove 
     -----  -----  -----  --------
     5      1      15063  502
 
+Credits
+-------
+Qualche ringraziamento:
+
+ - alle tante community sparse nel web, che si interessano all'argomento PowerShell e che permettono di imparare sempre cose nuove, quotidianamente,
+ - a [GitHub](https://github.com/) per tutto ciò che mette a disposizione,
+ - a [stackedit.io/editor](https://stackedit.io/editor) per l'ottimo editor MD online
+
 
 ----------
 *ultima revisione: agosto 2017*
