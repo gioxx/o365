@@ -5,13 +5,14 @@
 	URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 	
 	Modifiche:			GSolone
-	Versione:			0.5
+	Versione:			0.5 rev1
 	Utilizzo:			.\Export-MsolAccountSku.ps1
 						(opzionale, posizione CSV) .\Export-MsolAccountSku.ps1 -CSV C:\Licenze.csv
 						(opzionale, dominio da filtrare) .\Export-MsolAccountSku.ps1 -domain contoso.com
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	31-08-2017
+	Ultima modifica:	20-09-2017
 	Modifiche:
+		0.5 rev1- più che altro modifica estetica. Ho eliminato la colonna relativa all'avere licenza assegnata o meno, ho invertito il tipo di licenza posseduta prima dell'indirizzo di posta elettronica della persona.
 		0.5- corretto errore nel nome del file CSV. Se non specificato, viene immediatamente forzato in una posizione standard (ho spostato l'istruzione relativa più in alto rispetto al box informativo mostrato ad avvio script). Aggiungo tra le licenze: MCOEV (Skype for Business Cloud PBX), PROJECTPROFESSIONAL (Project Online Professional) che sostituisce "PROJECTCLIENT" (il vecchio client Project Pro 2016 su PC) e DYN365_ENTERPRISE_PLAN1 (Dynamics 365 Plan 1 Enterprise Edition).
 			Cambiato inoltre il metodo di estrazione dei dati: ora estraggo una riga per licenza, duplicando quindi l'assegnatario (ho comunque mantenuto anche il vecchio codice, nel caso in cui si preferisse una riga per utente, con tutte le licenze raggruppate).
 		0.4- corretto errore nel "-f" quando si specifica un dominio di ricerca. Forzo un nome del CSV diverso se si specifica il dominio di ricerca.
@@ -164,7 +165,7 @@ $users | Foreach-Object {
 	Per includerli nuovamente occorre aggiungere LicenseDetails al Select:
 	} | Select UserName,IsLicensed,Licenses,LicenseDetails | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
 #>
-} | Select UserName,UserPrincipalName,IsLicensed,Licenses | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
+} | Select UserName,Licenses,UserPrincipalName | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
 
 Write-Host "Done." -f "Green"
 ""
