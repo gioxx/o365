@@ -2,16 +2,17 @@
 	OFFICE 365: Remove Orphaned SID (Bulk, CSV)
 	------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.5
+	Versione:			0.6
 	Utilizzo:			.\RemoveOrphanedSID-CSV.ps1
 						(opzionale, modifica posizione file CSV) .\RemoveOrphanedSID-CSV.ps1 -csv C:\Export.CSV
 						(opzionale, analisi singola casella) .\RemoveOrphanedSID-CSV.ps1 -mbox shared@contoso.com
 						(opzionale, avvio rimozione) .\RemoveOrphanedSID-CSV.ps1 -Remove
 						I parametri da prompt possono essere concatenati.
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	26-09-2017
+	Ultima modifica:	10-01-2018
 	------------------------------------------------------------------------------------------------------------
 	== Modifiche ==
+		0.6- modifica estetica. Accanto alle opzioni attivate da riga di comando, propongo un "[X]" per darne immediato riscontro.
 		0.5- sostituito il parametro Action con uno switch diretto "Remove". Messo a posto formattazione script in più punti. Prevista la creazione della lista SID orfani in CSV nel caso in cui non sia presente (perché precedentemente creata) nella cartella di appoggio ($ExportList).
 		0.4 rev2- banale modifica per correzione estetica al "Premi un tasto per continuare" (mancavano le righe vuote alla conferma).
 		0.4 rev1- aggiunta funzione di Pausa per evitare di intercettare il tasto CTRL.
@@ -53,14 +54,19 @@ Function Main {
 	Write-Host "         rimasti memorizzati nelle Mailbox Permission delle caselle presenti in Exchange"
 	Write-Host "         Utilizzo:  .\RemoveOrphanedSID-CSV.ps1" -f "Yellow"
 	Write-Host "                    (esporta tutti i SID orfani in un file CSV di default)"	
+	if ([string]::IsNullOrEmpty($CSV) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         Opzionali: .\RemoveOrphanedSID-CSV.ps1 -CSV C:\Export.CSV" -f "Yellow"
 	Write-Host "                    (esporta tutti i SID orfani in un file CSV nella directory da te specificata)"
+	if ([string]::IsNullOrEmpty($Mbox) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "                    .\RemoveOrphanedSID-CSV.ps1 -Mbox shared@contoso.com" -f "Yellow"
 	Write-Host "                    (esporta i SID orfani della singola mailbox specificata)"
+	if ($Remove) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "                    .\RemoveOrphanedSID-CSV.ps1 -Remove" -f "Yellow"
 	Write-Host "                    (esporta e rimuove i SID orfani da ogni casella presente in Exchange)"	
 	Write-Host "         Vale concatenare i possibili parametri (es. -mbox shared@contoso.com -Remove)"
 	Write-Host "                                                (es. -csv C:\temp\OrphanedSID.csv -Remove)"
+	""
+	Write-Host "Trovi, vicino alle opzioni passate da riga di comando, il simbolo" -f "White" -nonewline; Write-Host " [X] " -f "Yellow" -nonewline; Write-Host "per indicare la relativa attivazione."
 	""
 	
 try

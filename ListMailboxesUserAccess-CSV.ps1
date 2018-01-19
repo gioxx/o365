@@ -2,7 +2,7 @@
 	OFFICE 365: List Mailboxes User Access
 	-------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.7
+	Versione:				0.8
 	Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 							(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 							(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
@@ -10,10 +10,11 @@
 							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -Scope All
 							(opzionale, analisi delle caselle in un CSV) .\ListMailboxesUserAccess-CSV.ps1 -Source C:\Mailbox.csv
 	Info:					http://gioxx.org/tag/o365-powershell
-	Ultima modifica:		12-10-2016
+	Ultima modifica:		09-01-2018
 	Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
 							http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
 	Modifiche:
+	0.8- modifica estetica. Accanto alle opzioni attivate da riga di comando, propongo un "[X]" per darne immediato riscontro.
 	0.7- ho aggiunto la possibilità di importare un file CSV con le caselle di posta da analizzare, per generare il report degli accessi FullAccess + SendAs. Il CSV dovrà contenere una colonna con gli indirizzi di posta, il titolo in testa dovrà essere "WindowsEmailAddress"
 	0.6- ho completamente cambiato il metodo di ricerca e analisi dei permessi, basandomi sull'originale proposto da http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/ e modificato per poter funzionare con Office 365 e PowerShell 2. Se il nome del file di output viene tenuto di default, aggiungo la data del giorno di estrazione.
 	0.5- il default di analisi passa alle Shared Mailbox. Per allargare lo scope sarà necessario richiamare lo script con parametro -Scope All.
@@ -67,11 +68,18 @@ Function Main {
 	Write-Host "        ------------------------------------------"
 	Write-Host "         Lo script elenca i diritti Full Access per ogni casella di posta" -f "White"
 	Write-Host "         presente su server Exchange (default: Shared Mailbox), salvando i risultati su un file CSV" -f "White"
+	if ([string]::IsNullOrEmpty($CSV)) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         '" -f "White" -nonewline; Write-Host $ExportList -f "Green" -nonewline; Write-Host "'" -f "White"
+	if ([string]::IsNullOrEmpty($CSV) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         (rilancia lo script con parametro -CSV PERCORSOFILE.CSV per modificare)." -f "White"
+	if ([string]::IsNullOrEmpty($Source) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         (rilancia lo script con parametro -Source per analizzare una lista di caselle salvata su file CSV)." -f "White"
+	if ([string]::IsNullOrEmpty($Domain) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         (rilancia lo script con parametro -Domain contoso.com per analizzare un singolo dominio)." -f "White"
+	if ([string]::IsNullOrEmpty($Scope) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         (rilancia lo script con parametro -Scope All per analizzare tutte le caselle, non solo le Shared)." -f "White"
+	""
+	Write-Host "Trovi, vicino alle opzioni passate da riga di comando, il simbolo" -f "White" -nonewline; Write-Host " [X] " -f "Yellow" -nonewline; Write-Host "per indicare la relativa attivazione." -f "White"
 	""
 	
 	<#do { $RicercaACL = Read-Host "Utente da cercare nei permessi (esempio: Mario Rossi) " } 
