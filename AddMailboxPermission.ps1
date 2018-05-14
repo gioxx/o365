@@ -2,12 +2,13 @@
 	OFFICE 365: Add Mailbox Permission (Full Access / SendAs / GrantSendOnBehalfTo / Auto-mapping)
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.12
+	Versione:			0.13
 	Utilizzo:			.\AddMailboxPermission.ps1
 						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com (oppure .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com)
 	Info:				http://gioxx.org/tag/o365-powershell
-	Ultima modifica:	26-10-2017
+	Ultima modifica:	27-04-2018
 	Modifiche:
+		0.13- ho aggiunto un Write-Host per notificare il GrantSendOnBehalfTo al giro di Get-MailboxPermission finale.
 		0.12- ho aggiunto il GrantSendOnBehalfTo al giro di Get-MailboxPermission finale.
 		0.11- ho solo modificato il Get-MailboxPermission finale.
 		0.10- includo un blocco di verifica permessi finali (a operazione di ADD terminata) così da verificare gli utenti con accesso alla casella di posta (FullAccess e SendAs), escludendo NT AUTHORITY\SELF e S-1-5* (utenti non più presenti nel sistema).
@@ -108,7 +109,9 @@ try
 	#Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | ft User, "Access Rights" | out-string
 	Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,AccessRights | ft User,AccessRights | out-string
 	Get-RecipientPermission $SourceMailbox -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | ft Trustee, AccessRights | out-string
+	Write-Host "GrantSendOnBehalfTo per $($SourceMailbox) (se presenti)" -f "Yellow"
 	Get-Mailbox $SourceMailbox | Select -Expand GrantSendOnBehalfTo
+	""
 }
 catch
 {
