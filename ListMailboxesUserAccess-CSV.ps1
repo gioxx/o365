@@ -2,18 +2,19 @@
 	OFFICE 365: List Mailboxes User Access
 	-------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.8
+	Versione:				0.9
 	Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 							(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 							(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
 							(opzionale, numero caselle da analizzare) .\ListMailboxesUserAccess-CSV.ps1 -Count 10
-							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -Scope All
+							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -All
 							(opzionale, analisi delle caselle in un CSV) .\ListMailboxesUserAccess-CSV.ps1 -Source C:\Mailbox.csv
 	Info:					http://gioxx.org/tag/o365-powershell
-	Ultima modifica:		09-01-2018
+	Ultima modifica:		09-11-2018
 	Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
 							http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
 	Modifiche:
+	0.9- modifica da -Scope All a -All per analizzare tutte le caselle di posta.
 	0.8- modifica estetica. Accanto alle opzioni attivate da riga di comando, propongo un "[X]" per darne immediato riscontro.
 	0.7- ho aggiunto la possibilità di importare un file CSV con le caselle di posta da analizzare, per generare il report degli accessi FullAccess + SendAs. Il CSV dovrà contenere una colonna con gli indirizzi di posta, il titolo in testa dovrà essere "WindowsEmailAddress"
 	0.6- ho completamente cambiato il metodo di ricerca e analisi dei permessi, basandomi sull'originale proposto da http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/ e modificato per poter funzionare con Office 365 e PowerShell 2. Se il nome del file di output viene tenuto di default, aggiungo la data del giorno di estrazione.
@@ -35,9 +36,8 @@ Param(
     [Parameter(Position=2, Mandatory=$false, ValueFromPipeline=$true)] 
     [string] $Count,
 	[Parameter(Position=3, Mandatory=$false, ValueFromPipeline=$true)] 
-    [string] $Scope,
-	[Parameter(Position=4, Mandatory=$false, ValueFromPipeline=$true)] 
-    [string] $Source
+    [string] $Source,
+	[switch] $All
 )
 
 #Main
@@ -53,7 +53,7 @@ Function Main {
 	
 	$DataOggi = Get-Date -format yyyyMMdd
 	if ([string]::IsNullOrEmpty($CSV) -eq $true) {
-		if ( $Scope -eq "All") {
+		if ($All) {
 			# Permessi di tutte le caselle
 			$ExportList = "C:\temp\MailboxPermissions_$DataOggi.csv"
 		} else { 
@@ -76,8 +76,8 @@ Function Main {
 	Write-Host "         (rilancia lo script con parametro -Source per analizzare una lista di caselle salvata su file CSV)." -f "White"
 	if ([string]::IsNullOrEmpty($Domain) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 	Write-Host "         (rilancia lo script con parametro -Domain contoso.com per analizzare un singolo dominio)." -f "White"
-	if ([string]::IsNullOrEmpty($Scope) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
-	Write-Host "         (rilancia lo script con parametro -Scope All per analizzare tutte le caselle, non solo le Shared)." -f "White"
+	if ($All) { Write-Host "[X]" -f "Yellow" -nonewline; }
+	Write-Host "         (rilancia lo script con parametro -All per analizzare tutte le caselle, non solo le Shared)." -f "White"
 	""
 	Write-Host "Trovi, vicino alle opzioni passate da riga di comando, il simbolo" -f "White" -nonewline; Write-Host " [X] " -f "Yellow" -nonewline; Write-Host "per indicare la relativa attivazione." -f "White"
 	""
@@ -115,7 +115,7 @@ Function Main {
 		if ([string]::IsNullOrEmpty($Source) -eq $true) {
 			# Campo Source non specificato, procedo con i parametri passati a riga di comando
 			
-			if ( $Scope -eq "All") {
+			if ($All) {
 				# Richiesta analisi di tutte le caselle di posta elettronica
 				if ([string]::IsNullOrEmpty($Domain) -eq $false) {
 					Write-Host "         Dominio da analizzare: $Domain" -f "Yellow"
