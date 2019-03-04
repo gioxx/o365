@@ -2,13 +2,17 @@
 	OFFICE 365: Automatic release quarantined messages if the sender is in Exchange Whitelist
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.1
+	Versione:			0.2
 	Utilizzo:			.\AutomaticQuarantineRelease.ps1 ContosoSpamFilterPolicy
-						(opzionale, specifica il mittente da cercare in Quarantena) .\AutomaticQuarantineRelease.ps1 -SenderAddress sender@contoso.com
-						(opzionale, specifica il mittente da cercare in Quarantena e sbloccalo) .\AutomaticQuarantineRelease.ps1 -SenderAddress sender@contoso.com -Release
+						(opzionale, specifica l'indirizzo mittente da cercare in Quarantena) .\AutomaticQuarantineRelease.ps1 -SenderAddress sender@contoso.com
+						(opzionale, specifica il dominio mittente da cercare in Quarantena) .\AutomaticQuarantineRelease.ps1 -SenderDomain contoso.com
+						(opzionale, specifica l'indirizzo mittente da cercare in Quarantena e sbloccalo) .\AutomaticQuarantineRelease.ps1 -SenderAddress sender@contoso.com -Release
+						(opzionale, specifica il dominio mittente da cercare in Quarantena e sbloccalo) .\AutomaticQuarantineRelease.ps1 -SenderDomain contoso.com -Release
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	25-02-2019
+	Fonti utilizzate:	https://social.technet.microsoft.com/wiki/contents/articles/30695.powershell-script-to-identify-quarantine-message-from-specific-domain.aspx
+	Ultima modifica:	04-03-2019
 	Modifiche:
+		0.2- includo i domini in Whitelist, correggo un problema nel riporto del mittente in sblocco e includo alcuni miglioramenti estetici. Fornisco ora una lista di mail rilasciate al termine dell'intervento.
 		0.1- nella modifica dello script in produzione obbligo l'utente a specificare la Spamfilter Policy dalla quale ereditare i mittenti in Whitelist e quando sblocco in maniera automatica i messaggi, lo faccio solo per quelli non ancora rilasciati.
 #>
 
@@ -17,27 +21,66 @@ Param(
     [string] $Spamfilter,
 	[Parameter(Position=1, Mandatory=$false, ValueFromPipeline=$true)] 
     [string] $SenderAddress,
+	[Parameter(Position=2, Mandatory=$false, ValueFromPipeline=$true)] 
+    [string] $SenderDomain,
     [switch] $Release
 )
 
-if ( [string]::IsNullOrEmpty($SenderAddress) ) {
+if ( ([string]::IsNullOrEmpty($SenderAddress)) -and ([string]::IsNullOrEmpty($SenderDomain)) ) {
 	Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Cerco le mail bloccate per TransportRule, attendi ..."
 	### Filtro Whitelist Sender --------------------------------------------------------------------
 	$SenderWhitelist = Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty AllowedSenders
 	foreach ($Sender in $SenderWhitelist) {
-		Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Cerco mail dal mittente $($Sender) non ancora rilasciati ..."
+		Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Cerco mail dal mittente $($Sender) non ancora rilasciate ..."
 		$qm = Get-QuarantineMessage -QuarantineTypes TransportRule -SenderAddress $Sender
 		$qmnr = $qm | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null}
-		Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Rilascio mail dal mittente $($d) ..."
+		$qmnr
+		Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Rilascio mail dal mittente $($Sender) ..."
 		$qmnr | Release-QuarantineMessage -ReleaseToAll
+		$qm | ForEach {Get-QuarantineMessage -Identity $_.Identity} | Select Subject,SenderAddress,ReceivedTime,Released,ReleasedUser
 	}
+	
+	Write-Progress -Activity "Sblocco quarantena da domini conosciuti" -Status "Cerco le mail bloccate per TransportRule, attendi ..."
+	### Filtro Whitelist Domains -------------------------------------------------------------------
+	$SenderDomainWhitelist = Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty AllowedSenderDomains
+	foreach ($Sender in $SenderDomainWhitelist) {
+		Write-Progress -Activity "Sblocco quarantena da domini conosciuti" -Status "Cerco mail dal dominio $($Sender) non ancora rilasciate ..."
+		$qm = Get-QuarantineMessage -QuarantineTypes TransportRule
+		$qmnr = $qm | ? {$_.senderaddress -like "*$Sender"} | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null}
+		$qmnr
+		Write-Progress -Activity "Sblocco quarantena da domini conosciuti" -Status "Rilascio mail dal dominio $($Sender) ..."
+		$qmnr | Release-QuarantineMessage -ReleaseToAll
+		$qm | ? {$_.senderaddress -like "*$Sender"} | ForEach {Get-QuarantineMessage -Identity $_.Identity} | Select Subject,SenderAddress,ReceivedTime,Released,ReleasedUser
+	}
+	
 } else {
-	if ($Release) {
-		### Rilascio tutti i messaggi di $SenderAddress in Quarantena (Warning a video se già rilasciati)
-		Get-QuarantineMessage -QuarantineTypes TransportRule -SenderAddress $SenderAddress | Release-QuarantineMessage -ReleaseToAll
-	} else {
-		### Mostro i messaggi di $SenderAddress bloccati in quarantena e non ancora rilasciati
-		$qm = Get-QuarantineMessage -QuarantineTypes TransportRule -SenderAddress $SenderAddress
-		$qm | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null}
+	if ([string]::IsNullOrEmpty($SenderAddress) -eq $false) {
+		if ($Release) {
+			### Rilascio tutti i messaggi di $SenderAddress in Quarantena
+			Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Rilascio mail dal mittente $($SenderAddress) ..."
+			Get-QuarantineMessage -QuarantineTypes TransportRule -SenderAddress $SenderAddress | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null} | Release-QuarantineMessage -ReleaseToAll
+			Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Verifico mail dal mittente $($SenderAddress) appena rilasciate ..."
+			Get-QuarantineMessage -QuarantineTypes TransportRule -SenderAddress $SenderAddress | ForEach {Get-QuarantineMessage -Identity $_.Identity} | Select Subject,SenderAddress,ReceivedTime,Released,ReleasedUser
+		} else {
+			### Mostro i messaggi di $SenderAddress bloccati in quarantena e non ancora rilasciati
+			Write-Progress -Activity "Sblocco quarantena da mittenti conosciuti" -Status "Elenco mail dal mittente $($SenderAddress) non ancora rilasciate ..."
+			$qm = Get-QuarantineMessage -QuarantineTypes TransportRule -SenderAddress $SenderAddress
+			$qm | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null}
+		}
+	}
+	
+	if ([string]::IsNullOrEmpty($SenderDomain) -eq $false) {
+		if ($Release) {
+			### Rilascio tutti i messaggi di $SenderDomain in Quarantena
+			Write-Progress -Activity "Sblocco quarantena da domini conosciuti" -Status "Rilascio mail dal dominio $($SenderDomain) ..."
+			Get-QuarantineMessage -QuarantineTypes TransportRule | ? {$_.senderaddress -like "*$SenderDomain"} | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null} | Release-QuarantineMessage -ReleaseToAll
+			Write-Progress -Activity "Sblocco quarantena da domini conosciuti" -Status "Verifico mail dal dominio $($SenderDomain) appena rilasciate ..."
+			Get-QuarantineMessage -QuarantineTypes TransportRule | ? {$_.senderaddress -like "*$SenderDomain"} | ForEach {Get-QuarantineMessage -Identity $_.Identity} | Select Subject,SenderAddress,ReceivedTime,Released,ReleasedUser
+		} else {
+			### Mostro i messaggi di $SenderDomain bloccati in quarantena e non ancora rilasciati
+			Write-Progress -Activity "Sblocco quarantena da domini conosciuti" -Status "Elenco mail dal dominio $($SenderDomain) non ancora rilasciate ..."
+			$qm = Get-QuarantineMessage -QuarantineTypes TransportRule
+			$qm | ? {$_.senderaddress -like "*$SenderDomain"} | ForEach {Get-QuarantineMessage -Identity $_.Identity} | ? {$_.QuarantinedUser -ne $null}
+		}
 	}
 }

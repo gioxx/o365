@@ -34,9 +34,9 @@ Tutti gli script sono stati inizialmente sviluppati e verificati per connettersi
 Ogni script è stato poi provato e revisionato per funzionare anche con le nuove versioni di PowerShell, native su Windows 10:
 
     PS C:\>$PSVersionTable.PSVersion
-	Major  Minor  Build  Revision
-	-----  -----  -----  --------
-	5      1      17134  228
+    Major  Minor  Build  Revision
+    -----  -----  -----  --------
+    5      1      17763  316
 
 Credits
 -------
@@ -44,8 +44,7 @@ Qualche ringraziamento:
 
  - alle tante community sparse nel web che si interessano all'argomento PowerShell e che permettono di imparare sempre cose nuove, quotidianamente,
  - A [GitHub](https://github.com/) per tutto ciò che mette a disposizione.
- - A [stackedit.io/editor](https://stackedit.io/editor) per l'ottimo editor MD online.
-
+ - A [stackedit.io/editor](https://stackedit.io/editor) per l'ottimo editor MD online e [Typora](https://typora.io/) per quello offline su Windows e macOS.
 
 ----------
-*ultima revisione: agosto 2018*
+*ultima revisione: marzo 2019*
