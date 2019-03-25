@@ -1,17 +1,18 @@
 <#
-	OFFICE 365: Automatic release quarantined messages if the sender is in Exchange Whitelist
+	OFFICE 365: Release quarantined messages if the sender is in Exchange Whitelist (single sender or domain)
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.2
-	Utilizzo:			.\AutomaticQuarantineRelease.ps1 ContosoSpamFilterPolicy
-						(opzionale, specifica l'indirizzo mittente da cercare in Quarantena) .\AutomaticQuarantineRelease.ps1 -SenderAddress sender@contoso.com
-						(opzionale, specifica il dominio mittente da cercare in Quarantena) .\AutomaticQuarantineRelease.ps1 -SenderDomain contoso.com
-						(opzionale, specifica l'indirizzo mittente da cercare in Quarantena e sbloccalo) .\AutomaticQuarantineRelease.ps1 -SenderAddress sender@contoso.com -Release
-						(opzionale, specifica il dominio mittente da cercare in Quarantena e sbloccalo) .\AutomaticQuarantineRelease.ps1 -SenderDomain contoso.com -Release
+	Versione:			0.2 rev1
+	Utilizzo:			.\QuarantineRelease.ps1 ContosoSpamFilterPolicy
+						(opzionale, specifica l'indirizzo mittente da cercare in Quarantena) .\QuarantineRelease.ps1 -SenderAddress sender@contoso.com
+						(opzionale, specifica il dominio mittente da cercare in Quarantena) .\QuarantineRelease.ps1 -SenderDomain contoso.com
+						(opzionale, specifica l'indirizzo mittente da cercare in Quarantena e sbloccalo) .\QuarantineRelease.ps1 -SenderAddress sender@contoso.com -Release
+						(opzionale, specifica il dominio mittente da cercare in Quarantena e sbloccalo) .\QuarantineRelease.ps1 -SenderDomain contoso.com -Release
 	Info:				https://gioxx.org/tag/o365-powershell
 	Fonti utilizzate:	https://social.technet.microsoft.com/wiki/contents/articles/30695.powershell-script-to-identify-quarantine-message-from-specific-domain.aspx
 	Ultima modifica:	04-03-2019
 	Modifiche:
+		0.2rev1- cambio nome script.
 		0.2- includo i domini in Whitelist, correggo un problema nel riporto del mittente in sblocco e includo alcuni miglioramenti estetici. Fornisco ora una lista di mail rilasciate al termine dell'intervento.
 		0.1- nella modifica dello script in produzione obbligo l'utente a specificare la Spamfilter Policy dalla quale ereditare i mittenti in Whitelist e quando sblocco in maniera automatica i messaggi, lo faccio solo per quelli non ancora rilasciati.
 #>
