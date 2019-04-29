@@ -5,13 +5,14 @@
 	URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 	
 	Modifiche:			GSolone
-	Versione:			0.5 rev1
-	Utilizzo:			.\Export-MsolAccountSku.ps1
-						(opzionale, posizione CSV) .\Export-MsolAccountSku.ps1 -CSV C:\Licenze.csv
-						(opzionale, dominio da filtrare) .\Export-MsolAccountSku.ps1 -domain contoso.com
+	Versione:			0.6
+	Utilizzo:			.\ExportMsolAccountSku.ps1
+						(opzionale, posizione CSV) .\ExportMsolAccountSku.ps1 -CSV C:\Licenze.csv
+						(opzionale, dominio da filtrare) .\ExportMsolAccountSku.ps1 -domain contoso.com
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	20-09-2017
+	Ultima modifica:	29-04-2018
 	Modifiche:
+		0.6- modifiche estetiche per parametri selezionati, modificata ricerca di dominio per includere anche i sottodomini. Includo la data odierna nel nome del file CSV estratto se non specificato diversamente da prompt.
 		0.5 rev1- più che altro modifica estetica. Ho eliminato la colonna relativa all'avere licenza assegnata o meno, ho invertito il tipo di licenza posseduta prima dell'indirizzo di posta elettronica della persona.
 		0.5- corretto errore nel nome del file CSV. Se non specificato, viene immediatamente forzato in una posizione standard (ho spostato l'istruzione relativa più in alto rispetto al box informativo mostrato ad avvio script). Aggiungo tra le licenze: MCOEV (Skype for Business Cloud PBX), PROJECTPROFESSIONAL (Project Online Professional) che sostituisce "PROJECTCLIENT" (il vecchio client Project Pro 2016 su PC) e DYN365_ENTERPRISE_PLAN1 (Dynamics 365 Plan 1 Enterprise Edition).
 			Cambiato inoltre il metodo di estrazione dei dati: ora estraggo una riga per licenza, duplicando quindi l'assegnatario (ho comunque mantenuto anche il vecchio codice, nel caso in cui si preferisse una riga per utente, con tutte le licenze raggruppate).
@@ -30,7 +31,8 @@ Param(
 
 # Se il CSV non è stato precedentemente specificato, utilizzo posizione e nome di default	
 if ([string]::IsNullOrEmpty($CSV)) {
-		$CSV = "C:\temp\O365-User-License-Report.csv"
+		$DataOggi = Get-Date -format yyyyMMdd
+		$CSV = "C:\temp\O365-User-License-Report_$DataOggi.csv"
 	}
 	
 # Main
@@ -39,9 +41,12 @@ Write-Host "        Office 365: User License Report" -f "Green"
 Write-Host "        ------------------------------------------"
 Write-Host "         Lo script crea un report delle licenze assegnate agli utenti" -f "White"
 Write-Host "         configurati sul server Exchange, salvando i risultati su un file CSV" -f "White"
+if ([string]::IsNullOrEmpty($CSV) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 Write-Host "         '" -f "White" -nonewline; Write-Host $CSV -f "Green" -nonewline; Write-Host "'" -f "White"
+if ([string]::IsNullOrEmpty($CSV)) { Write-Host "[X]" -f "Yellow" -nonewline; }
 Write-Host "         (rilancia lo script con parametro -CSV PERCORSOFILE.CSV per modificare)." -f "White"
 Write-Host "         È possibile specificare un singolo dominio di ricerca ed esportazione da riga di comando." -f "White"
+if ([string]::IsNullOrEmpty($Domain) -eq $false) { Write-Host "[X]" -f "Yellow" -nonewline; }
 Write-Host "         (rilancia lo script con parametro -domain contoso.com per filtrare)." -f "White"
 ""
 
@@ -74,9 +79,9 @@ if ([string]::IsNullOrEmpty($Domain)) {
 			$CSV = "C:\temp\O365-User-License-Report_$($Domain).csv"
 		}
 		""
-		Write-Host "         Dominio specificato: " -nonewline; Write-Host "$Domain" -f "Yellow"
+		Write-Host "         Dominio specificato: " -nonewline; Write-Host "*$($Domain)" -f "Yellow"
 		Write-Host "         CSV di destinazione: " -nonewline; Write-Host "$CSV" -f "Yellow"
-		$users = Get-MsolUser -All | Where-Object { $_.isLicensed -eq "TRUE" -and $_.UserPrincipalName -like "*@" + $Domain }
+		$users = Get-MsolUser -All | Where-Object { $_.isLicensed -eq "TRUE" -and $_.UserPrincipalName -like "*" + $Domain }
 	}
 
 $users | Foreach-Object {
