@@ -8,6 +8,7 @@ Ulteriori riferimenti utili da tenere d'occhio (lista più o meno aggiornata a c
 
 - https://github.com/Scine/Office365 (Office 365 Powershell scripts)
 - https://github.com/OfficeDev/Office-IT-Pro-Deployment-Scripts (A collection of useful PowerShell scripts to make deploying Office 2016 and Office 365 ProPlus easier for IT Pros and administrators. If you have any feature requests or ideas for future scripts please add the idea to the issues list in this repository [http://officedev.github.io/Office-IT-…](http://officedev.github.io/Office-IT-Pro-Deployment-Scripts))
+- https://github.com/spgoodman/p365scripts (Assorted scripts from Practical365.com)
 
 
 
