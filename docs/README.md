@@ -14,5 +14,12 @@ Ulteriori riferimenti utili da tenere d'occhio (lista più o meno aggiornata a c
 
 ## Microsoft Windows
 
-- https://github.com/Sycnex/Windows10Debloater (Script to remove Windows 10 bloatware)
-- https://github.com/nickrod518/Migrate-WindowsUserProfile (Migrate Windows user profile to a new machine using Microsoft USMT with a PowerShell GUI)
+- https://github.com/Sycnex/Windows10Debloater (Script to remove Windows 10 bloatware).
+- https://github.com/nickrod518/Migrate-WindowsUserProfile (Migrate Windows user profile to a new machine using Microsoft USMT with a PowerShell GUI).
+- https://geeklifenow.com/2019-03-08-PS-Create-Scheduled-Task/ (Creare operazioni pianificate da PowerShell / Creare operazioni pianificate che utilizzino la PowerShell, [qui trovi la discussione su Reddit](https://www.reddit.com/r/PowerShell/comments/aypnjo/create_scheduled_tasks_for_powershell/)).
+
+
+
+## Others
+
+- https://humanequivalentunit.github.io/Google-Authenticator-In-PowerShell/ (Google Authenticator via PowerShell, [qui trovi la discussione su Reddit](https://www.reddit.com/r/PowerShell/comments/ay9qxn/google_authenticator_2faotp_codes_in_powershell/)).
