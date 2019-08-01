@@ -2,13 +2,14 @@
 	OFFICE 365: Show Dynamic Distribution Group Users
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.4
+	Versione:			0.5
 	Utilizzo:			.\ListDynamicDistrGroup.ps1
 						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com
 						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com -CSV C:\temp\group.CSV
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	22-01-2019
+	Ultima modifica:	06-06-2019
 	Modifiche:
+		0.5- aggiungo delimitatore ";" all'export-CSV.
 		0.4- Select FirstName, LastName, DisplayName, Name al posto del vecchio Select Name. Metto a posto alcuni particolari "estetici" e snellisco le istruzioni utilizzate.
 		0.3 rev2- Sort-Object sull'output. Esportazione in CSV e non più su file di testo.
 		0.3 rev1- mostro a video le informazioni che prima esportavo esclusivamente nel CSV finale.
@@ -50,7 +51,7 @@ Function Main {
 		
 		if ( [string]::IsNullOrEmpty($CSV) -eq 0 ) {
 			# Esportazione risultati in CSV
-			Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | Select FirstName, LastName, DisplayName, Name, PrimarySmtpAddress, Company, City | Export-CSV $CSV -notypeinformation -force
+			Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | Select FirstName, LastName, DisplayName, Name, PrimarySmtpAddress, Company, City | Export-CSV $CSV -notypeinformation -force -Delimiter ";"
 			# Richiedo apertura file CSV
 			$message = "Devo aprire il file $($CSV)? (default: NO)"
 			$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Si."

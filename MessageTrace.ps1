@@ -2,7 +2,7 @@
 	OFFICE 365: Get Message Trace (Single User or Mail Domain)
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.2
+	Versione:			0.3
 	Utilizzo:			.\MessageTrace.ps1
 						(opzionale, passaggio dati da prompt) .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com (oppure .\AddMailboxPermission.ps1 shared@contoso.com mario.rossi@contoso.com)
 	Info:				http://gioxx.org/tag/o365-powershell
@@ -10,8 +10,9 @@
 						http://community.office365.com/en-us/f/148/t/239828.aspx
 						http://en.community.dell.com/techcenter/powergui/f/4834/t/19571829
 						https://gallery.technet.microsoft.com/office/Office-365-Mail-Traffic-afa37da1
-	Ultima modifica:	06-07-2017
+	Ultima modifica:	06-06-2019
 	Modifiche:
+		0.3- aggiungo delimitatore ";" all'export-CSV.
 		0.2- rivisto lo script. Ora accetta parametri e permette di filtrare il singolo utente piuttosto che l'intero dominio. 
 #>
 
@@ -70,7 +71,7 @@ Function Main {
 				$IngoingTotale += $BloccoIngoingAttuale
 			} 
 		until ($BloccoIngoingAttuale -eq $null)
-		$IngoingTotale | Where-Object {$_} | Export-Csv C:\temp\$NomeFile-outgoing-$CurrentDate.csv -NoTypeInformation
+		$IngoingTotale | Where-Object {$_} | Export-Csv C:\temp\$NomeFile-outgoing-$CurrentDate.csv -NoTypeInformation -Delimiter ";"
 		
 		""; Write-Host "Ricerco tutte le mail ricevute da $TargetRicerca, porta pazienza." -f "Yellow"
 		$OutgoingTotale = $null 
@@ -83,7 +84,7 @@ Function Main {
 				$OutgoingTotale += $BloccoOutgoingAttuale
 			} 
 		until ($BloccoOutgoingAttuale -eq $null)
-		$OutgoingTotale | Where-Object {$_} | Export-Csv C:\temp\$NomeFile-ingoing-$CurrentDate.csv -NoTypeInformation
+		$OutgoingTotale | Where-Object {$_} | Export-Csv C:\temp\$NomeFile-ingoing-$CurrentDate.csv -NoTypeInformation -Delimiter ";"
 		
 		""; Write-Host "Done." -f "green"
 		Write-Host "Puoi trovare i file CSV rispettivamente in"

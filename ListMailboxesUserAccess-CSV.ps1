@@ -2,7 +2,7 @@
 	OFFICE 365: List Mailboxes User Access
 	-------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.10
+	Versione:				0.11
 	Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 							(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 							(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
@@ -10,10 +10,11 @@
 							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -All
 							(opzionale, analisi delle caselle in un CSV) .\ListMailboxesUserAccess-CSV.ps1 -Source C:\Mailbox.csv
 	Info:					http://gioxx.org/tag/o365-powershell
-	Ultima modifica:		29-04-2019
+	Ultima modifica:		06-06-2019
 	Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
 							http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
 	Modifiche:
+	0.11- aggiungo delimitatore ";" all'export-CSV.
 	0.10- la ricerca per dominio include i sottodomini.
 	0.9- modifica da -Scope All a -All per analizzare tutte le caselle di posta.
 	0.8- modifica estetica. Accanto alle opzioni attivate da riga di comando, propongo un "[X]" per darne immediato riscontro.
@@ -108,7 +109,7 @@ Function Main {
 		
 		<# VECCHIO SCRIPT - Ricerca di test da lanciare manualmente per verifiche
 		Write-Progress -Activity "DEBUG QUERY" -Status "Se stai leggendo questo messaggio c'è qualche problema, modifica lo script per inserire nuovamente la query di Debug nella parte commentata"
-		Get-Mailbox -ResultSize 100 | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation TestQuery.csv
+		Get-Mailbox -ResultSize 100 | Get-MailboxPermission | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,@{Name='Access Rights';Expression={[string]::join(', ', $_.AccessRights)}} | Export-Csv -NoTypeInformation TestQuery.csv -Delimiter ";"
 		#>
 		
 		if ([string]::IsNullOrEmpty($Count) -eq $true) { $Count = "Unlimited" }

@@ -2,13 +2,14 @@
 	OFFICE 365: Export Company Users
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.8
+	Versione:			0.9
 	Utilizzo:			.\ExportCompanyUsers.ps1
 						(opzionale, passaggio dati da prompt) .\ExportCompanyUsers.ps1 -RicercaDominio contoso.com
 						(opzionale, passaggio dati da prompt) .\ExportCompanyUsers.ps1 -RicercaCompany "Contoso S.r.l." (comprensivo di virgolette)
 	Info:				http://gioxx.org/tag/o365-powershell
-	Ultima modifica:	21-07-2017
+	Ultima modifica:	06-06-2019
 	Modifiche:
+		0.9- aggiungo delimitatore ";" all'export-CSV.
 		0.8- riscritto, snellito e velocizzato.
 		0.7 rev1- ho solo corretto l'Out-String di uscita dei dati a video per RicercaDominio e RicercaCompany (ora -AutoSize)
 		0.7- ho modificato la modalità di esportazione dati, ora i risultati vanno in un file CSV. Ho commentato le righe relative all'aggiunta di data e ora dell'esportazione.
@@ -60,7 +61,7 @@ Function Main {
 				Write-Host "Esporto l'elenco in C:\temp\$RicercaCompany.csv e apro il file (salvo errori)." -f "Green"
 				$Today = [string]::Format( "{0:dd/MM/yyyy}", [datetime]::Now.Date )
 				$TimeIs = (get-date).tostring('HH:mm:ss')
-				Get-Recipient -ResultSize Unlimited | where {$_.Company -eq "$RicercaCompany"} | Select-Object DisplayName, PrimarySmtpAddress, Company, City | Export-CSV $ExportList -force -notypeinformation
+				Get-Recipient -ResultSize Unlimited | where {$_.Company -eq "$RicercaCompany"} | Select-Object DisplayName, PrimarySmtpAddress, Company, City | Export-CSV $ExportList -force -notypeinformation -Delimiter ";"
 				$a = Get-Content $ExportList
 				$b = "Esportazione utenti $RicercaCompany - $Today alle ore $TimeIs"
 				Invoke-Item $ExportList
@@ -90,7 +91,7 @@ Function Main {
 				Write-Host "Esporto l'elenco in C:\temp\$RicercaDominio.csv e apro il file (salvo errori)." -f "Green"
 				$Today = [string]::Format( "{0:dd/MM/yyyy}", [datetime]::Now.Date )
 				$TimeIs = (get-date).tostring('HH:mm:ss')
-				Get-Recipient -ResultSize Unlimited | where {$_.Company -eq "$RicercaCompany"} | Select-Object DisplayName, PrimarySmtpAddress, Company, City | Export-CSV $ExportList -force -notypeinformation
+				Get-Recipient -ResultSize Unlimited | where {$_.Company -eq "$RicercaCompany"} | Select-Object DisplayName, PrimarySmtpAddress, Company, City | Export-CSV $ExportList -force -notypeinformation -Delimiter ";"
 				$a = Get-Content $ExportList
 				$b = "Esportazione utenti $RicercaDominio - $Today alle ore $TimeIs"
 				Invoke-Item $ExportList

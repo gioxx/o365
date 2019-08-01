@@ -2,7 +2,7 @@
  OFFICE 365: Check Mailbox Size on Exchange (Disk Usage)
  ----------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.2
+	Versione:				0.3
 	Utilizzo:				.\DiskUsage.ps1
 							opzionale, modifica posizione export CSV: .\DiskUsage.ps1 C:\temp\Clutter.csv
 							opzionale, singola mailbox specificata: .\DiskUsage.ps1 -Mailbox mario.rossi@contoso.com
@@ -13,8 +13,9 @@
 	DEBUG per singolo nodo: 
 							Get-Mailbox -ResultSize 20 | Get-MailboxStatistics | where { $_.OriginatingServer -match "eurprd07.prod.outlook.com"} | 
 	Bug conosciuti:			se lo script trova una omonimia nel sistema, restituisce errore di tipo: 'La cassetta postale specificata "mario.rossi" non è univoca.'
-	Ultima modifica:		27-10-2016
+	Ultima modifica:		06-06-2019
 	Modifiche:				
+		0.3- aggiungo delimitatore ";" all'export-CSV.
 		0.2- aggiungo possibilità di esportare le statistiche solo delle caselle appartenenti a uno specifico dominio.
 		0.1 rev2- migliorata formattazione estrazione dati in CSV.
 		0.1 rev1- correzioni minori.
@@ -91,7 +92,7 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 			@{label="Total Size (GB)";expression={[math]::Round(`
 				# Trasformo in GB
 				($_.TotalItemSize.ToString().Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)}} |
-			Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation
+			Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation -Delimiter ";"
 			
 			""
 			Write-Host "Ho terminato l'esportazione dei dati." -f "Green"
@@ -126,7 +127,7 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 			@{label="Total Size (GB)";expression={[math]::Round(`
 				# Trasformo in GB
 				($_.TotalItemSize.ToString().Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)}} |
-			Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation
+			Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation -Delimiter ";"
 			
 			""
 			Write-Host "Ho terminato l'esportazione dei dati." -f "Green"

@@ -5,13 +5,14 @@
 	URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 	
 	Modifiche:			GSolone
-	Versione:			0.6
+	Versione:			0.7
 	Utilizzo:			.\ExportMsolAccountSku.ps1
 						(opzionale, posizione CSV) .\ExportMsolAccountSku.ps1 -CSV C:\Licenze.csv
 						(opzionale, dominio da filtrare) .\ExportMsolAccountSku.ps1 -domain contoso.com
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	29-04-2018
+	Ultima modifica:	06-06-2019
 	Modifiche:
+		0.7- aggiungo delimitatore ";" all'export-CSV.
 		0.6- modifiche estetiche per parametri selezionati, modificata ricerca di dominio per includere anche i sottodomini. Includo la data odierna nel nome del file CSV estratto se non specificato diversamente da prompt.
 		0.5 rev1- più che altro modifica estetica. Ho eliminato la colonna relativa all'avere licenza assegnata o meno, ho invertito il tipo di licenza posseduta prima dell'indirizzo di posta elettronica della persona.
 		0.5- corretto errore nel nome del file CSV. Se non specificato, viene immediatamente forzato in una posizione standard (ho spostato l'istruzione relativa più in alto rispetto al box informativo mostrato ad avvio script). Aggiungo tra le licenze: MCOEV (Skype for Business Cloud PBX), PROJECTPROFESSIONAL (Project Online Professional) che sostituisce "PROJECTCLIENT" (il vecchio client Project Pro 2016 su PC) e DYN365_ENTERPRISE_PLAN1 (Dynamics 365 Plan 1 Enterprise Edition).
@@ -168,9 +169,9 @@ $users | Foreach-Object {
 	
 <# 	Il Select finale non tiene conto dei servizi di base del tenant. 
 	Per includerli nuovamente occorre aggiungere LicenseDetails al Select:
-	} | Select UserName,IsLicensed,Licenses,LicenseDetails | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
+	} | Select UserName,IsLicensed,Licenses,LicenseDetails | Export-CSV $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
 #>
-} | Select UserName,Licenses,UserPrincipalName | Export-CSV $CSV -NoTypeInformation -Encoding UTF8
+} | Select UserName,Licenses,UserPrincipalName | Export-CSV $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
 
 Write-Host "Done." -f "Green"
 ""

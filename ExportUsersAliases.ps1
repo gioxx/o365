@@ -2,14 +2,15 @@
  OFFICE 365: Export Recipient Aliases
  ----------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.1
+	Versione:				0.2
 	Utilizzo:				.\ExportUsersAliases.ps1
 							obbligatorio, dominio di ricerca: .\ExportUsersAliases.ps1 contoso.com
 							opzionale, specifica posizione del file CSV esportato: .\ExportUsersAliases.ps1 -CSV C:\temp\Alias.csv
 	Info:					http://gioxx.org/tag/o365-powershell
 	Fonti utilizzate:		https://social.technet.microsoft.com/Forums/exchange/en-US/a234ba3b-37b4-4333-8954-5f46885c5e20/how-to-list-email-addresses-and-aliases-for-each-user?forum=exchangesvrgenerallegacy
-	Ultima modifica:		20-01-2017
-	Modifiche:				-
+	Ultima modifica:		06-06-2019
+	Modifiche:
+		0.2- aggiungo delimitatore ";" all'export-CSV.
 #>
 <#
 	Blocco originale:
@@ -33,7 +34,7 @@
 			}
 		}
 		# Export the final object to a csv in the working directory
-		$addresses | Export-Csv addresses.csv -NoTypeInformation
+		$addresses | Export-Csv addresses.csv -NoTypeInformation -Delimiter ";"
 #>
 
 #Verifica parametri da prompt
@@ -87,6 +88,6 @@ $ExportCSV = $host.ui.PromptForChoice("", $message, $options, 1)
 if ($ExportCSV -eq 0) { 
 	""
 	Write-Host "Esporto l'elenco in $CSV e apro il file (salvo errori)." -f "Yellow"
-	$addresses | Export-Csv $CSV -force -notypeinformation
+	$addresses | Export-Csv $CSV -force -notypeinformation -Delimiter ";"
 	Invoke-Item $CSV
 }
