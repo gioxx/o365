@@ -2,7 +2,7 @@
 	OFFICE 365: Edit Hosted Content Filter Policy (WhitelistSender / WhitelistDomain / BlacklistSender / BlacklistDomain)
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.2 rev1
+	Versione:			0.3
 	Utilizzo:			.\EditContentFilterPolicy.ps1
 						(opzionale, aggiungi utente Blacklist) .\EditContentFilterPolicy.ps1 Contoso -BlacklistSender user@contoso.com
 						(opzionale, aggiungi dominio Blacklist) .\EditContentFilterPolicy.ps1 Contoso -BlacklistDomain contoso.com
@@ -11,10 +11,11 @@
 						----------------------------------------------------------------------------------------------------------------
 						(opzionale, rimuovi con un -Remove in chiusura) .\EditContentFilterPolicy.ps1 Contoso -WhitelistDomain contoso.com -Remove
 	Info:				https://gioxx.org/tag/o365-powershell						
-	Ultima modifica:	25-02-2019
+	Ultima modifica:	13-09-2019
 	Modifiche:
-		0.2 rev1- modifica estetica per correzione formattazione nel blocco informativo dello script
-		0.2- se non ci sono modifiche da operare, mostro le attuali impostazioni delle liste usando un Out-Gridview
+		0.3- integro il nuovo ragionamento di Except che permette di escludere un utente dalla regola di blocco se fa parte di uno specifico gruppo.
+		0.2 rev1- modifica estetica per correzione formattazione nel blocco informativo dello script.
+		0.2- se non ci sono modifiche da operare, mostro le attuali impostazioni delle liste usando un Out-Gridview.
 #>
 
 #Verifica parametri da prompt
@@ -28,6 +29,7 @@ Param(
 )
 
 $ScriptName = $MyInvocation.MyCommand.Name
+$AllowedSendersGroup = "allowedsenders@contoso.onmicrosoft.com"
 
 ""
 Write-Host "        Office 365: Edit Hosted Content Filter Policy" -f "Green"
@@ -54,7 +56,7 @@ try
 	if ( [string]::IsNullOrEmpty($BlacklistSender) -eq $false ) {
 		""; Write-Host "        Blacklist Sender da modificare: $($BlacklistSender)"; "";
 		if ($Remove) { Set-HostedContentFilterPolicy $Spamfilter -BlockedSenders @{remove="$BlacklistSender"} } else { Set-HostedContentFilterPolicy $Spamfilter -BlockedSenders @{add="$BlacklistSender"} }
-		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty BlockedSenders
+		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty BlockedSenders | ft Sender
 		$StartEngine = 1
 	}
 	
@@ -62,15 +64,23 @@ try
 	if ( [string]::IsNullOrEmpty($BlacklistDomain) -eq $false ) {
 		""; Write-Host "        Blacklist Domain da modificare: $($BlacklistDomain)"
 		if ($Remove) { Set-HostedContentFilterPolicy $Spamfilter -BlockedSenderDomains @{remove="$BlacklistDomain"} } else { Set-HostedContentFilterPolicy $Spamfilter -BlockedSenderDomains @{add="$BlacklistDomain"} }
-		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty BlockedSenderDomains
+		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty BlockedSenderDomains | ft Domain
 		$StartEngine = 1
 	}
 	
 	# Whitelist Sender
 	if ( [string]::IsNullOrEmpty($WhitelistSender) -eq $false ) {
 		""; Write-Host "        Whitelist Sender da modificare: $($WhitelistSender)"
-		if ($Remove) { Set-HostedContentFilterPolicy $Spamfilter -AllowedSenders @{remove="$WhitelistSender"} } else { Set-HostedContentFilterPolicy $Spamfilter -AllowedSenders @{add="$WhitelistSender"} }
-		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty AllowedSenders
+		if ($Remove) { 
+			Remove-DistributionGroupMember $AllowedSendersGroup -Member $WhitelistSender -confirm:$false
+			Set-HostedContentFilterPolicy $Spamfilter -AllowedSenders @{remove="$WhitelistSender"}
+		} else { 
+			New-MailContact -DisplayName $WhitelistSender -Name $WhitelistSender -ExternalEmailAddress $WhitelistSender
+			Set-MailContact $WhitelistSender -HiddenFromAddressListsEnabled $true
+			$NewGroupMember = Add-DistributionGroupMember $AllowedSendersGroup -Member $WhitelistSender
+			Set-HostedContentFilterPolicy $Spamfilter -AllowedSenders @{add="$WhitelistSender"}
+		}
+		Get-HostedContentFilterPolicy $Spamfilter | select -ExpandProperty AllowedSenders | ft Sender
 		$StartEngine = 1
 	}
 	
@@ -78,7 +88,7 @@ try
 	if ( [string]::IsNullOrEmpty($WhitelistDomain) -eq $false ) {
 		""; Write-Host "        Whitelist Domain da modificare: $($WhitelistDomain)"
 		if ($Remove) { Set-HostedContentFilterPolicy $Spamfilter -AllowedSenderDomains @{remove="$WhitelistDomain"} } else { Set-HostedContentFilterPolicy $Spamfilter -AllowedSenderDomains @{add="$WhitelistDomain"} }
-		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty AllowedSenderDomains
+		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty AllowedSenderDomains | ft Domain
 		$StartEngine = 1
 	}
 	
