@@ -2,19 +2,20 @@
  OFFICE 365: Check Mailbox Size on Exchange (Disk Usage)
  ----------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.3
+	Versione:				0.4
 	Utilizzo:				.\DiskUsage.ps1
 							opzionale, modifica posizione export CSV: .\DiskUsage.ps1 C:\temp\Clutter.csv
 							opzionale, singola mailbox specificata: .\DiskUsage.ps1 -Mailbox mario.rossi@contoso.com
 							opzionale, singola mailbox specificata: .\DiskUsage.ps1 -Domain contoso.com
-	Info:					http://gioxx.org/tag/o365-powershell
+	Info:					https://gioxx.org/tag/o365-powershell
 	Fonti utilizzate:		http://www.morgantechspace.com/2015/09/find-office-365-mailbox-size-with-powershell.html
 							https://nchrissos.wordpress.com/2013/06/17/reporting-mailbox-sizes-on-microsoft-exchange-2010/
 	DEBUG per singolo nodo: 
 							Get-Mailbox -ResultSize 20 | Get-MailboxStatistics | where { $_.OriginatingServer -match "eurprd07.prod.outlook.com"} | 
 	Bug conosciuti:			se lo script trova una omonimia nel sistema, restituisce errore di tipo: 'La cassetta postale specificata "mario.rossi" non è univoca.'
-	Ultima modifica:		06-06-2019
+	Ultima modifica:		02-10-2019
 	Modifiche:				
+		0.4- modifica del tipo di esportazione eseguita per permettermi di tirare fuori anche PrimarySmtpAddress e RecipientType oltre all'occupazione e al numero totale di elementi.
 		0.3- aggiungo delimitatore ";" all'export-CSV.
 		0.2- aggiungo possibilità di esportare le statistiche solo delle caselle appartenenti a uno specifico dominio.
 		0.1 rev2- migliorata formattazione estrazione dati in CSV.
@@ -31,27 +32,28 @@ Param(
     [string] $Domain
 )
 
-<#
-	Puoi modificare il valore $CSV per impostare un diverso nome del file CSV che verrà
-	esportato dallo script (solo ciò che c'è tra le virgolette, ad esempio
-	$CSV = "C:\temp\CSV.csv" (per modificare anche la cartella di esportazione), 
-	oppure $CSV = "Permessi.csv" per salvare il file nella stessa cartella dello script.
-	ATTENZIONE: utilizza (per comodità) nomi diversi nel caso in cui lo script esporti i permessi
-				delle caselle ShaRed piuttosto che quelle personali.
-#>
-	$DataOggi = Get-Date -format yyyyMMdd
-	if ([string]::IsNullOrEmpty($CSV) -eq $true) {
-		$CSV = "C:\temp\DiskUsage_$DataOggi.csv"
-	}
+$DataOggi = Get-Date -format yyyyMMdd
 
 ""
 Write-Host "        Office 365: Check Mailbox Size on Exchange (Disk Usage)" -f "green"
 Write-Host "        ------------------------------------------"
 
 # Mailbox non specificata, estrazione dati completa
-if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
+if ([string]::IsNullOrEmpty($Mailbox)) {
 	# Dominio non specificato, estrazione dati completa
-	if ([string]::IsNullOrEmpty($Domain) -eq $true) {
+	if ([string]::IsNullOrEmpty($Domain)) {
+	
+		<#
+			Puoi modificare il valore $CSV per impostare un diverso nome del file CSV che verrà
+			esportato dallo script (solo ciò che c'è tra le virgolette, ad esempio
+			$CSV = "C:\temp\CSV.csv" (per modificare anche la cartella di esportazione), 
+			oppure $CSV = "Permessi.csv" per salvare il file nella stessa cartella dello script.
+			ATTENZIONE: utilizza (per comodità) nomi diversi nel caso in cui lo script esporti i permessi
+						delle caselle ShaRed piuttosto che quelle personali.
+		#>
+		if ([string]::IsNullOrEmpty($CSV)) {
+			$CSV = "C:\temp\DiskUsage_$DataOggi.csv"
+		}
 
 		Write-Host "          ATTENZIONE:" -f "Red"
 		Write-Host "          L'operazione può richiedere MOLTO tempo, dipende dal numero di utenti"
@@ -86,13 +88,22 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 			Write-Host "        A long time left, grab a Snickers!" -f "Yellow"
 			Write-Progress -Activity "Download dati da Exchange" -Status "Scarico occupazione disco delle caselle registrate nel sistema..."
 			# Analisi occupazione Mailbox, sort, salvataggio su file
-			Get-Mailbox -ResultSize Unlimited | Get-MailboxStatistics |
+			
+			Get-Mailbox -ResultSize Unlimited | 
+			Select-Object DisplayName,
+			PrimarySmtpAddress,RecipientTypeDetails,
+			@{Name='TotalItemSize(GB)'; expression={[math]::Round((((Get-MailboxStatistics $_.PrimarySmtpAddress).TotalItemSize.Value.ToString()).Split(“(“)[1].Split(” “)[0].Replace(“,”,””)/1GB),2)}},
+			@{Name='ItemCount'; expression={(Get-MailboxStatistics $_.PrimarySmtpAddress).ItemCount}} |
+			Export-Csv $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
+			
+			<#Get-Mailbox -ResultSize Unlimited | Get-MailboxStatistics |
 			Select-Object -Property @{label="User";expression={$_.DisplayName}},
 			@{label="Total Messages";expression= {$_.ItemCount}},
 			@{label="Total Size (GB)";expression={[math]::Round(`
 				# Trasformo in GB
 				($_.TotalItemSize.ToString().Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)}} |
 			Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation -Delimiter ";"
+			#>
 			
 			""
 			Write-Host "Ho terminato l'esportazione dei dati." -f "Green"
@@ -115,19 +126,28 @@ if ([string]::IsNullOrEmpty($Mailbox) -eq $true) {
 	# Dominio specificato, estrazione dati relativa solo a lui
 		
 		# Se non è specificato il nome del CSV, lo genero con la data odierna e il dominio richiesto
-		if ([string]::IsNullOrEmpty($CSV) -eq $true) {
+		if ([string]::IsNullOrEmpty($CSV)) {
 			$CSV = "C:\temp\DiskUsage_$Domain_$DataOggi.csv"
 		}
 		
 		""; ""; Write-Host "        File CSV di destinazione: " -nonewline; Write-Host $CSV -f "Yellow";
-		Write-Host "        Dominio da analizzare specificato: " -nonewline; Write-Host $Domain -f "Yellow"
-		Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*@" + $Domain} | Get-MailboxStatistics |
+		Write-Host "        Dominio da analizzare specificato: " -nonewline; Write-Host *$($Domain) -f "Yellow"
+				
+		Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*" + $Domain} |
+		Select-Object DisplayName,
+		PrimarySmtpAddress,RecipientTypeDetails,
+		@{Name='TotalItemSize(GB)'; expression={[math]::Round((((Get-MailboxStatistics $_.PrimarySmtpAddress).TotalItemSize.Value.ToString()).Split(“(“)[1].Split(” “)[0].Replace(“,”,””)/1GB),2)}},
+		@{Name='ItemCount'; expression={(Get-MailboxStatistics $_.PrimarySmtpAddress).ItemCount}} |
+		Export-Csv $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
+		
+		<#Get-Mailbox -ResultSize Unlimited | where {$_.PrimarySmtpAddress -like "*" + $Domain} | Get-MailboxStatistics |
 		Select-Object -Property @{label="User";expression={$_.DisplayName}},
 			@{label="Total Messages";expression= {$_.ItemCount}},
 			@{label="Total Size (GB)";expression={[math]::Round(`
 				# Trasformo in GB
 				($_.TotalItemSize.ToString().Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)}} |
 			Sort "Total Size (GB)" -Descending | Export-CSV $CSV -force -notypeinformation -Delimiter ";"
+		#>
 			
 			""
 			Write-Host "Ho terminato l'esportazione dei dati." -f "Green"

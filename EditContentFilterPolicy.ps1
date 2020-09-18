@@ -10,10 +10,11 @@
 						(opzionale, aggiungi dominio Whitelist) .\EditContentFilterPolicy.ps1 Contoso -WhitelistDomain contoso.com
 						----------------------------------------------------------------------------------------------------------------
 						(opzionale, rimuovi con un -Remove in chiusura) .\EditContentFilterPolicy.ps1 Contoso -WhitelistDomain contoso.com -Remove
-	Info:				https://gioxx.org/tag/o365-powershell						
+	Info:				https://gioxx.org/tag/o365-powershell
+	Fonti utilizzate:	http://www.pkpnotes.in/eop-part3/
 	Ultima modifica:	13-09-2019
 	Modifiche:
-		0.3- integro il nuovo ragionamento di Except che permette di escludere un utente dalla regola di blocco se fa parte di uno specifico gruppo.
+		0.3- integro il nuovo ragionamento di Except che permette di escludere un utente dalla regola di blocco se fa parte di uno specifico gruppo. Aggiungo lo stesso ragionamento per i domini e intervengo direttamente sulla regola di trasporto.
 		0.2 rev1- modifica estetica per correzione formattazione nel blocco informativo dello script.
 		0.2- se non ci sono modifiche da operare, mostro le attuali impostazioni delle liste usando un Out-Gridview.
 #>
@@ -29,7 +30,9 @@ Param(
 )
 
 $ScriptName = $MyInvocation.MyCommand.Name
-$AllowedSendersGroup = "allowedsenders@contoso.onmicrosoft.com"
+$AllowedSendersGroup = "Security_exchangeallowedsenders@messita.onmicrosoft.com"
+$PhishingPatternsRule = "Phishing: Patterns (Report)"
+$AntimalwareIntegrationRule = "Antimalware (integration) (Report)"
 
 ""
 Write-Host "        Office 365: Edit Hosted Content Filter Policy" -f "Green"
@@ -87,7 +90,19 @@ try
 	# Whitelist Domain
 	if ( [string]::IsNullOrEmpty($WhitelistDomain) -eq $false ) {
 		""; Write-Host "        Whitelist Domain da modificare: $($WhitelistDomain)"
-		if ($Remove) { Set-HostedContentFilterPolicy $Spamfilter -AllowedSenderDomains @{remove="$WhitelistDomain"} } else { Set-HostedContentFilterPolicy $Spamfilter -AllowedSenderDomains @{add="$WhitelistDomain"} }
+		if ($Remove) { 
+			Set-HostedContentFilterPolicy $Spamfilter -AllowedSenderDomains @{remove="$WhitelistDomain"}
+			$Domains=(Get-TransportRule $($AntimalwareIntegrationRule)).ExceptIfSenderDomainIs
+			$Domains.remove($WhitelistDomain)
+			Set-TransportRule $($AntimalwareIntegrationRule) -ExceptIfSenderDomainIs $Domains
+			Set-TransportRule $($PhishingPatternsRule) -ExceptIfSenderDomainIs $Domains
+		} else { 
+			Set-HostedContentFilterPolicy $Spamfilter -AllowedSenderDomains @{add="$WhitelistDomain"}
+			$Domains=(Get-TransportRule $($AntimalwareIntegrationRule)).ExceptIfSenderDomainIs
+			$Domains.add($WhitelistDomain)
+			Set-TransportRule $($AntimalwareIntegrationRule) -ExceptIfSenderDomainIs $Domains
+			Set-TransportRule $($PhishingPatternsRule) -ExceptIfSenderDomainIs $Domains
+		}
 		Get-HostedContentFilterPolicy $Spamfilter | Select -ExpandProperty AllowedSenderDomains | ft Domain
 		$StartEngine = 1
 	}

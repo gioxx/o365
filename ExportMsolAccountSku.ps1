@@ -5,13 +5,14 @@
 	URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 	
 	Modifiche:			GSolone
-	Versione:			0.7
+	Versione:			0.8
 	Utilizzo:			.\ExportMsolAccountSku.ps1
 						(opzionale, posizione CSV) .\ExportMsolAccountSku.ps1 -CSV C:\Licenze.csv
 						(opzionale, dominio da filtrare) .\ExportMsolAccountSku.ps1 -domain contoso.com
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	06-06-2019
+	Ultima modifica:	15-09-2020
 	Modifiche:
+		0.8- aggiungo licenze per "Exchange Online (Piano 2)", "Enterprise Mobility + Security E3", "Dynamics 365 Team Members", "Power Automate Free", "Power Apps Plan 2 Trial", "Teams Exploratory" e "Microsoft Stream - Evaluation version" a quelle rilevate.
 		0.7- aggiungo delimitatore ";" all'export-CSV.
 		0.6- modifiche estetiche per parametri selezionati, modificata ricerca di dominio per includere anche i sottodomini. Includo la data odierna nel nome del file CSV estratto se non specificato diversamente da prompt.
 		0.5 rev1- più che altro modifica estetica. Ho eliminato la colonna relativa all'avere licenza assegnata o meno, ho invertito il tipo di licenza posseduta prima dell'indirizzo di posta elettronica della persona.
@@ -113,7 +114,8 @@ $users | Foreach-Object {
 				'*ENTERPRISEWITHSCAL_FACULTY' { $licName = 'Office 365 (Plan A4) for Faculty' }
 			   
 				'*LITEPACK' { $licName = 'O365 Plan P1' }
-				'*EXCHANGESTANDARD' { $licName = 'O365 Plan P1 (Online Only)' }
+				'*EXCHANGESTANDARD' { $licName = 'O365 Plan P1' }
+				'*EXCHANGEENTERPRISE' { $licName = 'O365 Plan P2' }
 				'*STANDARDPACK' { $licName = 'O365 Plan E1' }
 				'*STANDARDWOFFPACK' { $licName = 'O365 Plan E2' }
 				'*ENTERPRISEPACK' { $licName = 'O365 Plan E3' }
@@ -122,9 +124,16 @@ $users | Foreach-Object {
 				'*VISIOCLIENT' { $licName = 'Visio Pro 2016' }
 				'*PROJECTCLIENT' { $licName = 'Project Pro 2016' }
 				'*PROJECTPROFESSIONAL' { $licName = 'Project Online Professional' }
+				'*EMS' { $licName = 'Enterprise Mobility + Security E3' }
 				
 				'*MCOEV' { $licName = 'Skype for Business Cloud PBX' }
 				'*DYN365_ENTERPRISE_PLAN1' { $licName = 'Dynamics 365 Plan 1' }
+				'*DYN365_TEAM_MEMBERS' { $licName = 'Dynamics 365 Team Members' }
+				
+				'*FLOW_FREE' { $licName = 'Power Automate Free' }
+				'*POWERAPPS_VIRAL' { $licName = 'Power Apps Plan 2 Trial' }
+				'*TEAMS_EXPLORATORY' { $licName = 'Teams Exploratory' }
+				'*STREAM' { $licName = 'Microsoft Stream - Evaluation version' }
 				
 				default { $licName = $license.Accountskuid.tostring() }
 			}
