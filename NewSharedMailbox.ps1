@@ -7,11 +7,12 @@
 	Last Modified By: 		Alan Byrne
 	----------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.8
+	Versione:				0.9
 	Utilizzo:				.\New-SharedMailbox.ps1
 	Info:					http://gioxx.org/tag/o365-powershell
-	Ultima modifica:		17-10-2017
+	Ultima modifica:		15-10-2020
 	Modifiche:
+		0.9- imposto MessageCopyForSendOnBehalfEnabled e MessageCopyForSentAsEnabled entrambi a $True per salvare copia delle email inviate dalla casella di posta condivisa direttamente al suo interno e non solo nella Sent Items dell'utente che la sta utilizzando.
 		0.8- ho modificato l'esempio relativo all'indirizzo di posta da creare (ora info@contoso.com). Ho messo a posto parte dell'indentazione, e ho aggiunto un blocco che mostra i permessi applicati alla casella di posta quando si termina di aggiungerne.
 		0.7- ho commentato la forzatura del MicrosoftOnlineServicesID, non più necessaria
 		0.6- ho dovuto inserire un nuovo "sleep" prima di settare il MicrosoftOnlineServicesID perché in alcuni casi il server Exchange non trova immediatamente l'utente, cosa che invece succede già a 10 secondi di distanza dal comando di creazione casella.
@@ -121,6 +122,10 @@ Function Main {
 		$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
 		$result = $host.ui.PromptForChoice($title, $message, $options, 0) 
 	}
+	
+	""; Write-Host "Imposto salvataggio copia email in uscita per $SharedMailboxUserName " -f "Yellow"
+	Set-Mailbox $SharedMailboxUserName -MessageCopyForSentAsEnabled $True
+	Set-Mailbox $SharedMailboxUserName -MessageCopyForSendOnBehalfEnabled $True
 	
 	""; Write-Host "All Done!" -f "Green"
 	Write-Host "Riepilogo accessi alla casella di $SharedMailboxUserName " -f "Yellow"
