@@ -1,6 +1,6 @@
 <#	O365 PShell Snippet:	Export Quarantined Message
-	Autore (ver.-mod.):		GSolone (0.4 ult.mod. 21/10/20)
-	Utilizzo:				.\ExportQuarantinedMessage.ps1 "<55f33732-c398-e309-46a7-25202e43ae6a@contoso.com>"
+	Autore (ver.-mod.):		GSolone (0.5 ult.mod. 25/10/20)
+	Utilizzo:				.\ExportQuarantinedMessage.ps1 55f33732-c398-e309-46a7-25202e43ae6a@contoso.com
 	Info:					https://gioxx.org/tag/o365-powershell
 #>
 Param([Parameter(Position=0, Mandatory=$false, ValueFromPipeline=$true)][string] $MessageID)
