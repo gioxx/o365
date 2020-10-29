@@ -3,7 +3,7 @@
 	Utilizzo:				.\ExportQuarantinedMessage.ps1 55f33732-c398-e309-46a7-25202e43ae6a@contoso.com
 	Info:					https://gioxx.org/tag/o365-powershell
 #>
-Param([Parameter(Position=0, Mandatory=$false, ValueFromPipeline=$true)][string] $MessageID)
+Param([Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true)][string] $MessageID)
 if (-not($MessageID.StartsWith('<'))) { $MessageID = '<' + $MessageID }
 if (-not($MessageID.EndsWith('>'))) { $MessageID += '>' }
 $e = Get-QuarantineMessage -MessageId $($MessageID) | Export-QuarantineMessage; $bytes = [Convert]::FromBase64String($e.eml); [IO.File]::WriteAllBytes("C:\Temp\QuarantinedMessage.eml", $bytes)
