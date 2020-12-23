@@ -2,10 +2,10 @@
 	OFFICE 365: List Calendars User Access (CSV)
 	-------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.1
+	Versione:				0.2
 	Utilizzo:				.\ListCalendarPermission.ps1
 	Info:					https://gioxx.org/tag/o365-powershell
-	Ultima modifica:		05-11-2020
+	Ultima modifica:		23-12-2020
 	Fonti utilizzate:		https://morgantechspace.com/2019/09/get-calendar-permissions-for-all-users-using-powershell.html
 							https://itsallinthecode.com/exchange-powershell-get-calendar-folder-permissions-in-any-language/
 							https://techcommunity.microsoft.com/t5/office-365/report-on-default-calendar-permissions-if-they-are-set-to/m-p/155060
@@ -14,7 +14,6 @@
 		-
 	
 	ATTENZIONE:
-	Il CSV deve contenere in colonna 1 il DisplayName e in colonna 2 il PrimarySmtpAddress degli utenti da analizzare.
 #>
 
 $Result=@()
