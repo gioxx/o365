@@ -2,13 +2,15 @@
 	OFFICE 365: Show Dynamic Distribution Group Users
 	----------------------------------------------------------------------------------------------------------------
 	Autore:				GSolone
-	Versione:			0.5
+	Versione:			0.6
 	Utilizzo:			.\ListDynamicDistrGroup.ps1
 						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com
 						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com -CSV C:\temp\group.CSV
+						(opzionale, passaggio dati da prompt) .\ListDynamicDistrGroup.ps1 group@contoso.com -GridView
 	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	06-06-2019
+	Ultima modifica:	27-11-2020
 	Modifiche:
+		0.6- permetto l'Out-GridView in fase di export NON CSV.
 		0.5- aggiungo delimitatore ";" all'export-CSV.
 		0.4- Select FirstName, LastName, DisplayName, Name al posto del vecchio Select Name. Metto a posto alcuni particolari "estetici" e snellisco le istruzioni utilizzate.
 		0.3 rev2- Sort-Object sull'output. Esportazione in CSV e non più su file di testo.
@@ -22,7 +24,8 @@ Param(
     [Parameter(Position=0, Mandatory=$false, ValueFromPipeline=$true)] 
     [string] $RicercaGruppo, 
     [Parameter(Position=1, Mandatory=$false, ValueFromPipeline=$true)] 
-    [string] $CSV
+    [string] $CSV,
+	[switch] $GridView
 )
 
 #Main
@@ -47,7 +50,11 @@ Function Main {
 		Write-Progress -Activity "Download dati da Exchange" -Status "Esporto utenti in $RicercaGruppo, attendi..."
 		$members = Get-DynamicDistributionGroup -Identity $RicercaGruppo
 		""; Write-Host "        Anteprima dei risultati (indirizzo di posta elettronica):" -f "Yellow"; "";
-		Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | ft PrimarySmtpAddress
+		if ($GridView) {
+			Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | select FirstName, LastName, DisplayName, Name, PrimarySmtpAddress, Company, City | Out-GridView
+		} else {
+			Get-Recipient -RecipientPreviewFilter $members.RecipientFilter | select PrimarySmtpAddress
+		}
 		
 		if ( [string]::IsNullOrEmpty($CSV) -eq 0 ) {
 			# Esportazione risultati in CSV

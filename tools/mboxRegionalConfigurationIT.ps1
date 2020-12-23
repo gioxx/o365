@@ -1,5 +1,5 @@
 <#	O365 PShell Snippet:	Set-MailboxRegionalConfiguration Locale IT
-	Autore (ver.-mod.):		GSolone (0.2 ult.mod. 27/10/20)
+	Autore (ver.-mod.):		GSolone (0.3 ult.mod. 13/11/20)
 	Utilizzo:				.\mboxRegionalConfigurationIT.ps1 user@contoso.com
 	Info:					https://gioxx.org/tag/o365-powershell
 #>
@@ -11,10 +11,11 @@ if ( [string]::IsNullOrEmpty($CSV) ) {
 	if ( -not([string]::IsNullOrEmpty($SourceMailbox)) ) { 
 		Write-Host "Modifico lingua della casella di posta $SourceMailbox " -f "yellow"
 		Set-MailboxRegionalConfiguration $SourceMailbox -LocalizeDefaultFolderName:$true -Language it-IT
+		Get-MailboxRegionalConfiguration $SourceMailbox
 	}
 } else {
 	Import-CSV $CSV | foreach { 
 		Write-Host "Modifico $_.EmailAddress" -f "Yellow"
-		Set-MailboxRegionalConfiguration $_.EmailAddress -LocalizeDefaultFolderName:$true -Language it-IT 
+		Set-MailboxRegionalConfiguration $_.EmailAddress -LocalizeDefaultFolderName:$true -Language it-IT
 	}
 }
