@@ -2,7 +2,7 @@
 	OFFICE 365: List Mailboxes User Access
 	-------------------------------------------------------------------------------------------------------------
 	Autore:					GSolone
-	Versione:				0.11
+	Versione:				0.12
 	Utilizzo:				.\ListMailboxesUserAccess-CSV.ps1
 							(opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
 							(opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
@@ -10,10 +10,11 @@
 							(opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -All
 							(opzionale, analisi delle caselle in un CSV) .\ListMailboxesUserAccess-CSV.ps1 -Source C:\Mailbox.csv
 	Info:					http://gioxx.org/tag/o365-powershell
-	Ultima modifica:		06-06-2019
+	Ultima modifica:		11-01-2021
 	Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
 							http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
 	Modifiche:
+	0.12- cambio solamente il campo di importazione per il file CSV di Source.
 	0.11- aggiungo delimitatore ";" all'export-CSV.
 	0.10- la ricerca per dominio include i sottodomini.
 	0.9- modifica da -Scope All a -All per analizzare tutte le caselle di posta.
@@ -188,7 +189,7 @@ Function Main {
 			""
 			"DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
 			Import-Csv $Source | ForEach-Object {
-				$Mailbox = Get-Mailbox $_.WindowsEmailAddress | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
+				$Mailbox = Get-Mailbox $_.PrimarySMTPAddress | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
 				$SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
 				$FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
 				$Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append
