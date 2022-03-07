@@ -20,9 +20,9 @@ Function Main {
 	Write-Host "          nei dati richiesti qui di seguito" -f "red"
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
-	$RicercaUtente = Read-Host "Utente da modificare (esempio: mario.rossi@domain.tld)  "
+	$RicercaUtente = Read-Host "Utente da modificare (esempio: mario.rossi@contoso.com)  "
 	$RicercaCompany = Read-Host "Valore Company (esempio: Contoso S.r.l.)                "
-	
+
 	try
 	{
 		""
@@ -39,7 +39,7 @@ Function Main {
 		write-host $error[0]
 		return ""
 	}
-	
+
 }
 
 # Start script

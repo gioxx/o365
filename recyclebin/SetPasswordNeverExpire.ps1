@@ -9,7 +9,7 @@
 # Modifiche:			-
 ############################################################################################################################
 
-#$Credential = New-Object –TypeName System.Management.Automation.PSCredential –ArgumentList $User, $PWord
+#$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
 #Import-Module MSOnline
 #Connect-MsolService -Credential $Credential
 
@@ -24,8 +24,8 @@ Function Main {
 	Write-Host "          nei dati richiesti qui di seguito" -foregroundcolor "red"
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
-	$RicercaUser = Read-Host "Utente da modificare (esempio: mario.rossi@domain.tld) "
-	
+	$RicercaUser = Read-Host "Utente da modificare (esempio: mario.rossi@contoso.com) "
+
 	try
 	{
 		Set-MsolUser -UserPrincipalName $RicercaUser -PasswordNeverExpires $true
@@ -40,7 +40,7 @@ Function Main {
 		write-host $error[0]
 		return ""
 	}
-	
+
 }
 
 # Start script

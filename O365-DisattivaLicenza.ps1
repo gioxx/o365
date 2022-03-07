@@ -1,13 +1,13 @@
 <#
-	OFFICE 365: Disable Office 365 License and Rearm
-	---------------------------------------------------------------------------------------------------
-	Modifiche:			GSolone
-	Versione:			0.1
-	Utilizzo:			.\O365-DisattivaLicenza.ps1
-	Info:				https://gioxx.org/tag/o365-powershell
-	Ultima modifica:	12-09-2017
-	Fonti utilizzate:	https://stackoverflow.com/questions/2988880/extricate-a-substring-using-powershell
-	Modifiche:			-
+OFFICE 365: Disable Office 365 License and Rearm
+---------------------------------------------------------------------------------------------------
+Modifiche:				GSolone
+Versione:					0.1
+Utilizzo:					.\O365-DisattivaLicenza.ps1
+Info:							https://gioxx.org/tag/o365-powershell
+Ultima modifica:	12-09-2017
+Fonti utilizzate:	https://stackoverflow.com/questions/2988880/extricate-a-substring-using-powershell
+Modifiche:
 #>
 
 # Cerco sulla macchina (in ordine) Office 2016 x64 / x86, poi -se non lo trovo- cerco Office 2013 x64 / x86
@@ -34,7 +34,6 @@ if (Test-Path -path $OFC16x64) {
 
 $unpkey = $license -match "Last 5 characters of installed product key: (?<content>.*)"
 $unpkey
-#Prendo solo il primo codice di licenza, gli altri sono quasi sempre ulteriori prodotti installati (e correttamente licenziati):
 $prodkey = $unpkey[0]
 $prodkey = $prodkey.Substring(44,5)
 

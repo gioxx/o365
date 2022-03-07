@@ -1,7 +1,7 @@
 <#	O365 PShell Snippet:	Export Quarantined Message
-	Autore (ver.-mod.):		GSolone (0.6 ult.mod. 29/10/20)
-	Utilizzo:				.\ExportQuarantinedMessage.ps1 55f33732-c398-e309-46a7-25202e43ae6a@contoso.com
-	Info:					https://gioxx.org/tag/o365-powershell
+Autore (ver.-mod.):				GSolone (0.6 ult.mod. 29/10/20)
+Utilizzo:									.\ExportQuarantinedMessage.ps1 55f33732-c398-e309-46a7-25202e43ae6a@contoso.com
+Info:											https://gioxx.org/tag/o365-powershell
 #>
 Param([Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true)][string] $MessageID)
 if (-not($MessageID.StartsWith('<'))) { $MessageID = '<' + $MessageID }
@@ -15,6 +15,6 @@ $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "R
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Non rilasciare il messaggio."
 $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
 $result = $host.ui.PromptForChoice("", $message, $options, 0)
-if ($result -eq 0) { 
+if ($result -eq 0) {
 	Get-QuarantineMessage -MessageId $($MessageID) | Release-QuarantineMessage -ReleaseToAll
 }

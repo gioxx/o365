@@ -6,11 +6,11 @@
 # Utilizzo:				.\SetCompanyBulk.ps1
 # Info:					http://gioxx.org/tag/o365-powershell
 # Ultima modifica:		13-10-2015
-# Modifiche:	
-#	0.5- Correzione minore: la ricerca viene effettuata sullo specifico dominio in ingresso, un eventuale sottodominio deve essere dichiarato (esempio: contoso.com nella ricerca non mostrerà i risultati di dep1.contoso.com nell'eventualità dep1 fosse un suo sottodominio).		
+# Modifiche:
+#	0.5- Correzione minore: la ricerca viene effettuata sullo specifico dominio in ingresso, un eventuale sottodominio deve essere dichiarato (esempio: contoso.com nella ricerca non mostrerï¿½ i risultati di dep1.contoso.com nell'eventualitï¿½ dep1 fosse un suo sottodominio).
 #	0.4- Modificato il $_.EmailAddresses in $_.PrimarySmtpAddress per mettere la Company in base all'indirizzo di posta principale e non considerare eventuali alias
 #	0.3- Modificato il -ResultSize Unlimited per supportare il numero massimo di caselle
-#	0.2- Inserita notifica di lavorazione per ciascun utente (prima assegnava il campo senza notificare alcunché durante la lavorazione, si arrivava direttamente alla fine del ciclo ForEach)
+#	0.2- Inserita notifica di lavorazione per ciascun utente (prima assegnava il campo senza notificare alcunchÃ¨ durante la lavorazione, si arrivava direttamente alla fine del ciclo ForEach)
 ############################################################################################################################
 
 #Main
@@ -24,9 +24,9 @@ Function Main {
 	Write-Host "          nei dati richiesti qui di seguito" -foregroundcolor "red"
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
-	$RicercaDominio = Read-Host "Dominio da analizzare (esempio: domain.tld) "
+	$RicercaDominio = Read-Host "Dominio da analizzare (esempio: contoso.com) "
 	$RicercaCompany = Read-Host "Valore Company (esempio: Contoso S.r.l.)    "
-	
+
 	try
 	{
 		""
@@ -46,7 +46,7 @@ Function Main {
 		write-host $error[0]
 		return ""
 	}
-	
+
 }
 
 # Start script

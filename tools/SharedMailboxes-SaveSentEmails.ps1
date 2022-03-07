@@ -1,9 +1,8 @@
 <#	O365 PShell Snippet:	Shared Mailboxes: save a copy of all sent emails
-	Autore (ver.-mod.):		GSolone (0.1 ult.mod. 16/10/20)
-	Utilizzo:				.\SharedMailboxes-SaveSentEmails.ps1
-	Info:					https://gioxx.org/tag/o365-powershell
+Autore (ver.-mod.):				GSolone (0.1 ult.mod. 16/10/20)
+Utilizzo:									.\SharedMailboxes-SaveSentEmails.ps1
+Info:											https://gioxx.org/tag/o365-powershell
 #>
-
 $mboxCounter = 0
 $Users = Get-Recipient -ResultSize Unlimited | Where {$_.RecipientTypeDetails -eq "SharedMailbox"}
 Write-Host "Anteprima risultati" -f "Yellow"

@@ -20,9 +20,9 @@ Function Main {
 	Write-Host "          nei dati richiesti qui di seguito" -foregroundcolor "red"
 	""
 	Write-Host "-------------------------------------------------------------------------------------------------"
-	$RicercaDominio = Read-Host "Dominio da analizzare (esempio: domain.tld) "
+	$RicercaDominio = Read-Host "Dominio da analizzare (esempio: contoso.com) "
 	$RicercaCity = Read-Host "Valore City (esempio: Assago)               "
-	
+
 	try
 	{
 		""
@@ -41,7 +41,7 @@ Function Main {
 		write-host $error[0]
 		return ""
 	}
-	
+
 }
 
 # Start script
