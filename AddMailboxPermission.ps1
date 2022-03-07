@@ -22,34 +22,27 @@ Modifiche:
   0.2- rev1/rev4-correpzioni minori, inclusa adesso la possibilità di modificare ulteriormente le ACL dando anche accesso "Invia Come" (SendAs).
 #>
 
-#Verifica parametri da prompt
 Param(
   [Parameter(Position=0, Mandatory=$false, ValueFromPipeline=$true)][string] $SourceMailbox,
   [Parameter(Position=1, Mandatory=$false, ValueFromPipeline=$true)][string] $GiveAccessTo
 )
 
-""
-Write-Host "        Office 365: Add Mailbox Permission" -f "Green"
+""; Write-Host "        Office 365: Add Mailbox Permission" -f "Green"
 Write-Host "        ------------------------------------------"
 
-if ( [string]::IsNullOrEmpty($SourceMailbox) -OR [string]::IsNullOrEmpty($GiveAccessTo) )
-{
+if ( [string]::IsNullOrEmpty($SourceMailbox) -OR [string]::IsNullOrEmpty($GiveAccessTo) ) {
   # Mancano i dettagli da prompt, li richiedo a video
   Write-Host "          ATTENZIONE:" -f "Red"
   Write-Host "          Fare molta attenzione ai possibili errori di digitazione" -f "Red"
-  Write-Host "          nei dati richiesti qui di seguito" -f "Red"
-  ""
-  Write-Host "-------------------------------------------------------------------------------------------------"
-  ""
-  $SourceMailbox = Read-Host "Casella alla quale dare accesso (esempio: sharedmailbox@domain.tld)"
-  $GiveAccessTo = Read-Host "Utente al quale dare Full Access (esempio: mario.rossi@domain.tld) "
+  Write-Host "          nei dati richiesti qui di seguito" -f "Red"; ""
+  Write-Host "-------------------------------------------------------------------------------------------------"; ""
+  $SourceMailbox = Read-Host "Casella alla quale dare accesso (esempio: sharedmailbox@contoso.com)"
+  $GiveAccessTo = Read-Host "Utente al quale dare Full Access (esempio: mario.rossi@contoso.com) "
   ""
 }
 
 try {
-  ""
-  Write-Host "Autorizzo $GiveAccessTo a utilizzare $SourceMailbox ..." -f "Yellow"
-  ""
+  ""; Write-Host "Autorizzo $GiveAccessTo a utilizzare $SourceMailbox ..." -f "Yellow"; ""
   $message = "$GiveAccessTo deve caricare automaticamente $SourceMailbox in Outlook (auto-mapping)?"
   $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
   $No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
@@ -57,16 +50,12 @@ try {
   $PermissionType = $host.ui.PromptForChoice("", $message, $options, 0)
   if ($PermissionType -eq 0) {
     Add-MailboxPermission -Identity $SourceMailbox -User $GiveAccessTo -AccessRights FullAccess
-    ""
-    Write-Host "Accesso consentito a $GiveAccessTo (su $SourceMailbox), auto-mapping attivo" -f "Green"
-    ""
+    ""; Write-Host "Accesso consentito a $GiveAccessTo (su $SourceMailbox), auto-mapping attivo" -f "Green"; ""
   } else {
     ""
     Add-MailboxPermission -Identity $SourceMailbox -User $GiveAccessTo -AccessRights FullAccess -AutoMapping:$false
-    ""
-    Write-Host "Accesso consentito a $GiveAccessTo (su $SourceMailbox), auto-mapping DISATTIVATO"
-    Write-Host "Ricordarsi di operare sull'Outlook dell'utente per caricare manualmente $SourceMailbox" -f "Green"
-    ""
+    ""; Write-Host "Accesso consentito a $GiveAccessTo (su $SourceMailbox), auto-mapping DISATTIVATO"
+    Write-Host "Ricordarsi di operare sull'Outlook dell'utente per caricare manualmente $SourceMailbox" -f "Green"; ""
   }
 
   $title = "SendAs - L'utente $GiveAccessTo deve poter inviare come fosse $SourceMailbox ?"
@@ -79,8 +68,7 @@ try {
     Add-RecipientPermission $SourceMailbox -Trustee $GiveAccessTo -AccessRights SendAs
     ""
   } else {
-    ""
-    Write-Host "SendAs non impostato." -f "Red"
+    ""; Write-Host "SendAs non impostato." -f "Red"
     $message = "Send On Behalf To - L'utente $GiveAccessTo deve poter almeno inviare a nome di $SourceMailbox (Es. Mario Rossi per conto di $SourceMailbox)?"
     $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", ""
     $No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", ""
@@ -90,13 +78,11 @@ try {
       Set-Mailbox $SourceMailbox -GrantSendOnBehalfTo @{add="$GiveAccessTo"}
       ""
     } else {
-      ""
-      Write-Host "Send On Behalf To non impostato." -f "Red"
+      ""; Write-Host "Send On Behalf To non impostato." -f "Red"
     }
   }
 
-  ""
-  Write-Host "All Done!" -f "Green"
+  ""; Write-Host "All Done!" -f "Green"
   Write-Host "Riepilogo accessi alla casella di $SourceMailbox " -f "yellow"
   # Esclusioni applicate: NT AUTHORITY\SELF, S-1-5* (utenti non più presenti nel sistema)
   Get-MailboxPermission -Identity $SourceMailbox | where {$_.user.tostring() -ne "NT AUTHORITY\SELF" -and $_.user.tostring() -NotLike "S-1-5*" -and $_.IsInherited -eq $false} | Select Identity,User,AccessRights | ft User,AccessRights | out-string
