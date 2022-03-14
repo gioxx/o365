@@ -4,11 +4,12 @@ OFFICE 365: Create New Shared Mailbox
 Autore originale: 		Alan Byrne
 Versione originale:		1.0
 Modifiche:						GSolone
-Versione:							0.9
+Versione:							0.9 rev1
 Utilizzo:							.\New-SharedMailbox.ps1
 Info:									https://gioxx.org/tag/o365-powershell
-Ultima modifica:			15-10-2020
+Ultima modifica:			14-03-2022
 Modifiche:
+		0.9 rev1- correggo un ";" mancante.
 		0.9- imposto MessageCopyForSendOnBehalfEnabled e MessageCopyForSentAsEnabled entrambi a $True per salvare copia delle email inviate dalla casella di posta condivisa direttamente al suo interno e non solo nella Sent Items dell'utente che la sta utilizzando.
 		0.8- ho modificato l'esempio relativo all'indirizzo di posta da creare (ora info@contoso.com). Ho messo a posto parte dell'indentazione, e ho aggiunto un blocco che mostra i permessi applicati alla casella di posta quando si termina di aggiungerne.
 		0.7- ho commentato la forzatura del MicrosoftOnlineServicesID, non più necessaria
@@ -74,7 +75,7 @@ Function Main {
 			}
 		} else {
 			try {
-				""; "" Write-Host "Inserisco i permessi Read Only sulla shared mailbox"; "";
+				""; ""; Write-Host "Inserisco i permessi Read Only sulla shared mailbox"; "";
 				Add-MailboxPermission $SharedMailboxDisplayName -User $UserToPermission -AccessRights ReadPermission -AutoMapping $true
 			} catch {
 				Write-Host "Non riesco ad applicare i permessi Read Only, riprovare." -f "Red"
