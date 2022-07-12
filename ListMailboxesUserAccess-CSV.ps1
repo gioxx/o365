@@ -2,7 +2,7 @@
 OFFICE 365: List Mailboxes User Access
 -------------------------------------------------------------------------------------------------------------
 Autore:					    GSolone
-Versione:				    0.12
+Versione:				    0.13
 Utilizzo:				    .\ListMailboxesUserAccess-CSV.ps1
                     (opzionale, posizione CSV) .\ListMailboxesUserAccess-CSV.ps1 -CSV C:\Utenti.csv
                     (opzionale, filtro dominio) .\ListMailboxesUserAccess-CSV.ps1 -Domain contoso.com
@@ -10,10 +10,11 @@ Utilizzo:				    .\ListMailboxesUserAccess-CSV.ps1
                     (opzionale, analisi di tutte le caselle di posta) .\ListMailboxesUserAccess-CSV.ps1 -All
                     (opzionale, analisi delle caselle in un CSV) .\ListMailboxesUserAccess-CSV.ps1 -Source C:\Mailbox.csv
 Info:					      https://gioxx.org/tag/o365-powershell
-Ultima modifica:		11-01-2021
+Ultima modifica:		11-07-2022
 Fonti utilizzate:		http://exchangeserverpro.com/list-users-access-exchange-mailboxes/
                     http://mattellis.me/export-fullaccess-sendas-permissions-for-shared-mailboxes/
 Modifiche:
+    0.13- correggo errore dovuto alle identità non univoche.
     0.12- cambio solamente il campo di importazione per il file CSV di Source.
     0.11- aggiungo delimitatore ";" all'export-CSV.
     0.10- la ricerca per dominio include i sottodomini.
@@ -60,6 +61,7 @@ Function Main {
   } else { $ExportList = $CSV }
 
       ################################################################################################
+
 
       ""; Write-Host "        Office 365: List Mailboxes User Access" -foregroundcolor "Green"
       Write-Host "        ------------------------------------------"
@@ -112,8 +114,8 @@ Function Main {
               "DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
               $Mailboxes = Get-Mailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
               ForEach ($Mailbox in $Mailboxes) {
-                $SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-                $FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+                $SendAs = Get-RecipientPermission $Mailbox.PrimarySMTPAddress -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+                $FullAccess = Get-MailboxPermission $Mailbox.PrimarySMTPAddress | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
                 $Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
               } else {
                 Write-Host "         Dominio da analizzare: All" -f "Yellow"
@@ -124,8 +126,8 @@ Function Main {
                 "DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
                 $Mailboxes = Get-Mailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
                 ForEach ($Mailbox in $Mailboxes) {
-                  $SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-                  $FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+                  $SendAs = Get-RecipientPermission $Mailbox.PrimarySMTPAddress -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+                  $FullAccess = Get-MailboxPermission $Mailbox.PrimarySMTPAddress | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
                   $Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
                 }
               } else {
@@ -140,8 +142,8 @@ Function Main {
                   "DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
                   $Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | where {$_.PrimarySmtpAddress -like "*" + $Domain} | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
                   ForEach ($Mailbox in $Mailboxes) {
-                    $SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-                    $FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+                    $SendAs = Get-RecipientPermission $Mailbox.PrimarySMTPAddress -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+                    $FullAccess = Get-MailboxPermission $Mailbox.PrimarySMTPAddress | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
                     $Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
                   } else {
                     Write-Host "         Dominio da analizzare: All" -f "Yellow"
@@ -153,8 +155,8 @@ Function Main {
                     "DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
                     $Mailboxes = Get-Mailbox -RecipientTypeDetails SharedMailbox -ResultSize $Count | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
                     ForEach ($Mailbox in $Mailboxes) {
-                      $SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-                      $FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+                      $SendAs = Get-RecipientPermission $Mailbox.PrimarySMTPAddress -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+                      $FullAccess = Get-MailboxPermission $Mailbox.PrimarySMTPAddress | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
                       $Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append }
                     }
                   }
@@ -171,8 +173,8 @@ Function Main {
                     "DisplayName" + "," + "PrimarySMTPAddress" + "," + "Full Access" + "," + "Send As" | Out-File $ExportList -Force
                     Import-Csv $Source | ForEach-Object {
                       $Mailbox = Get-Mailbox $_.PrimarySMTPAddress | Select Identity, PrimarySMTPAddress, DisplayName, DistinguishedName
-                      $SendAs = Get-RecipientPermission $Mailbox.Identity -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
-                      $FullAccess = Get-MailboxPermission $Mailbox.Identity | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
+                      $SendAs = Get-RecipientPermission $Mailbox.PrimarySMTPAddress -AccessRights SendAs | where {$_.Trustee.tostring() -ne "NT AUTHORITY\SELF" -and $_.Trustee.tostring() -NotLike "S-1-5*"} | % {$_.Trustee}
+                      $FullAccess = Get-MailboxPermission $Mailbox.PrimarySMTPAddress | ? {$_.AccessRights -eq "FullAccess" -and !$_.IsInherited} | % {$_.User}
                       $Mailbox.DisplayName + "," + $Mailbox.PrimarySMTPAddress + "," + $FullAccess + "," + $SendAs | Out-File $ExportList -Append
                     }
 
@@ -197,4 +199,5 @@ Function Main {
               }
 
               # Start script
+              $ErrorActionPreference = 'SilentlyContinue'
               . Main
