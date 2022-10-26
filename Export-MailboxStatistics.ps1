@@ -21,7 +21,6 @@ Select-Object DisplayName,
 servername,database,
 RecipientTypeDetails,PrimarySmtpAddress,
 @{Name='TotalItemSize(GB)'; expression={[math]::Round((((Get-MailboxStatistics $_.PrimarySmtpAddress).TotalItemSize.Value.ToString()).Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)}},
-@{Name='ItemCount'; expression={(Get-MailboxStatistics $_.PrimarySmtpAddress).ItemCount}},
 IssueWarningQuota, ProhibitSendQuota |
 Export-Csv $CSV -Append -NoTypeInformation -Encoding UTF8 -Delimiter ";"
 Invoke-Item $CSV
