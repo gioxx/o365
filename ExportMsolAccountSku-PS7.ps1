@@ -4,15 +4,19 @@ OFFICE 365: "User License Report" for PowerShell 7
 Autore originale:	Kombaiah Murugan (8 feb. 2016)
 URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 Modifiche:        GSolone
-Versione:         0.9
-Utilizzo:         .\ExportMsolAccountSku.ps1
-                  (opzionale, posizione CSV) .\ExportMsolAccountSku.ps1 -CSV C:\Licenze.csv
-                  (opzionale, dominio da filtrare) .\ExportMsolAccountSku.ps1 -domain contoso.com
+Versione:         0.11
+Utilizzo:         .\ExportMsolAccountSku-PS7.ps1
+                  (opzionale, posizione CSV) .\ExportMsolAccountSku-PS7.ps1 -CSV C:\Licenze.csv
+                  (opzionale, dominio da filtrare) .\ExportMsolAccountSku-PS7.ps1 -domain contoso.com
 Info:				      https://gioxx.org/tag/o365-powershell
 Fonti utilizzate:	https://theposhwolf.com/howtos/Set-MgUserLicense-PowerShell-Assign-O365-License/
                   https://o365reports.com/2021/11/23/office-365-license-reporting-and-management-using-powershell
-Ultima modifica:	07-03-2022
+Ultima modifica:	23-11-2022
 Modifiche:
+    0.11- correggo un errore causato dal caricamento modulo MSOnline prima di Graph (vedi https://github.com/microsoftgraph/msgraph-sdk-powershell/issues/641).
+          Approfitto di questo aggiornamento per correggere alcuni warning mostrati da VSCode e per modificare il blocco / funzione Pausa.
+          Riordino le righe dei prodotti / licenze.
+    0.10- revisione corrispondenza licenze e aggiungo POWERAPPS_DEV (Microsoft Power Apps for Developer).
     0.9- migro verso Microsoft Graph e PowerShell 7.
     0.8- aggiungo licenze per "Exchange Online (Piano 2)", "Enterprise Mobility + Security E3", "Dynamics 365 Team Members", "Power Automate Free", "Power Apps Plan 2 Trial", "Teams Exploratory" e "Microsoft Stream - Evaluation version" a quelle rilevate.
     0.7- aggiungo delimitatore ";" all'export-CSV.
@@ -38,6 +42,15 @@ if ([string]::IsNullOrEmpty($CSV)) {
 }
 
 #Cerco e carico i moduli necessari
+$GraphModule = Get-Module -Name Microsoft.Graph -ListAvailable
+if ($GraphModule.count -eq 0) {
+  Write-Host "Installa il modulo Graph usando questo comando (poi rilancia questo script): `nInstall-Module Microsoft.Graph" -f "Yellow"
+  Exit
+}
+else {
+  Connect-MgGraph
+}
+
 $MOLModule=Get-Module -Name MSOnline -ListAvailable
 if($MOLModule.count -eq 0) {
   Write-Host "Installa il modulo MSOnline usando questo comando (poi rilancia questo script): `nInstall-Module MSOnline" -f "Yellow"
@@ -45,13 +58,6 @@ if($MOLModule.count -eq 0) {
 } else {
   Import-Module MSOnline -UseWindowsPowershell
   Connect-MsolService | Out-Null
-}
-$GraphModule=Get-Module -Name Microsoft.Graph -ListAvailable
-if($GraphModule.count -eq 0) {
-  Write-Host "Installa il modulo Graph usando questo comando (poi rilancia questo script): `nInstall-Module Microsoft.Graph" -f "Yellow"
-  Exit
-} else {
-  Connect-MgGraph
 }
 
 # Main
@@ -69,19 +75,8 @@ if ([string]::IsNullOrEmpty($Domain) -eq $false) { Write-Host "[X]" -f "Yellow" 
 Write-Host "         (rilancia lo script con parametro -domain contoso.com per filtrare)." -f "White"
 ""
 
-Function Pause($M="Premi un tasto continuare (CTRL+C per annullare)") {
-  If($psISE) {
-    $S=New-Object -ComObject "WScript.Shell"
-    $B=$S.Popup("Fai clic su OK per continuare.",0,"In attesa dell'amministratore",0)
-    Return
-  }
-  Write-Host -NoNewline $M;
-  $I=16,17,18,20,91,92,93,144,145,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183;
-  While($K.VirtualKeyCode -Eq $Null -Or $I -Contains $K.VirtualKeyCode) {
-    $K=$Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-  }
-}
-Pause
+Write-Host -NoNewLine "Premi un tasto continuare (CTRL+C per annullare)";
+$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
 
 ""; Write-Progress -Activity "Download dati da Exchange" -Status "Scarico i dati relativi alle licenze, attendi."; ""
 
@@ -108,16 +103,16 @@ $users | Foreach-Object {
   ForEach ( $license in $($graphlicense.SkuPartNumber) ) {
     switch -wildcard ($($license)) {
       '*AAD_BASIC' { $licName = 'Azure Active Directory Basic' }
-      '*AAD_PREMIUM' { $licName = 'Azure Active Directory Premium' }
       '*AAD_PREMIUM_P1' { $licName = 'Azure Active Directory Premium P1' }
       '*AAD_PREMIUM_P2' { $licName = 'Azure Active Directory Premium P2' }
+      '*AAD_PREMIUM' { $licName = 'Azure Active Directory Premium' }
       '*ADALLOM_O365' { $licName = 'Office 365 Advanced Security Management' }
-      '*ADALLOM_STANDALONE' { $licName = 'Microsoft Cloud App Security' }
       '*ADALLOM_S_O365' { $licName = 'POWER BI STANDALONE' }
       '*ADALLOM_S_STANDALONE' { $licName = 'Microsoft Cloud App Security' }
+      '*ADALLOM_STANDALONE' { $licName = 'Microsoft Cloud App Security' }
       '*ATA' { $licName = 'Azure Advanced Threat Protection for Users' }
-      '*ATP_ENTERPRISE' { $licName = 'Exchange Online Advanced Threat Protection' }
       '*ATP_ENTERPRISE_FACULTY' { $licName = 'Exchange Online Advanced Threat Protection' }
+      '*ATP_ENTERPRISE' { $licName = 'Exchange Online Advanced Threat Protection' }
       '*BI_AZURE_P0' { $licName = 'Power BI (free)' }
       '*BI_AZURE_P1' { $licName = 'Power BI Reporting and Analytics' }
       '*BI_AZURE_P2' { $licName = 'Power BI Pro' }
@@ -129,71 +124,73 @@ $users | Foreach-Object {
       '*CRMSTANDARD' { $licName = 'CRM Online' }
       '*CRMSTORAGE' { $licName = 'Microsoft Dynamics CRM Online Additional Storage' }
       '*CRMTESTINSTANCE' { $licName = 'CRM Test Instance' }
+      '*D365_CUSTOMER_SERVICE_ENT_ATTACH' { $licName = 'Dynamics 365 Sales Enterprise Edition' }
+      '*D365_SALES_PRO' { $licName = 'Dynamics 365 for Sales Professional' }
       '*DESKLESS' { $licName = 'Microsoft StaffHub' }
-      '*DESKLESSPACK' { $licName = 'Office 365 (Plan K1)' }
       '*DESKLESSPACK_GOV' { $licName = 'Microsoft Office 365 (Plan K1) for Government' }
       '*DESKLESSPACK_YAMMER' { $licName = 'Office 365 Enterprise K1 with Yammer' }
-      '*DESKLESSWOFFPACK' { $licName = 'Office 365 (Plan K2)' }
+      '*DESKLESSPACK' { $licName = 'Office 365 (Plan K1)' }
       '*DESKLESSWOFFPACK_GOV' { $licName = 'Microsoft Office 365 (Plan K2) for Government' }
-      '*DEVELOPERPACK' { $licName = 'Office 365 Enterprise E3 Developer' }
+      '*DESKLESSWOFFPACK' { $licName = 'Office 365 (Plan K2)' }
       '*DEVELOPERPACK_E5' { $licName = 'Microsoft 365 E5 Developer(without Windows and Audio Conferencing)' }
+      '*DEVELOPERPACK' { $licName = 'Office 365 Enterprise E3 Developer' }
       '*DMENTERPRISE' { $licName = 'Microsoft Dynamics Marketing Online Enterprise' }
       '*DYN365_ENTERPRISE_CUSTOMER_SERVICE' { $licName = 'Dynamics 365 for Customer Service Enterprise Edition' }
       '*DYN365_ENTERPRISE_P1_IW' { $licName = 'Dynamics 365 P1 Trial for Information Workers' }
       '*DYN365_ENTERPRISE_PLAN1' { $licName = 'Dynamics 365 Plan 1 Enterprise Edition' }
-      '*DYN365_ENTERPRISE_SALES' { $licName = 'Dynamics 365 for Sales Enterprise Edition' }
       '*DYN365_ENTERPRISE_SALES_CUSTOMERSERVICE' { $licName = 'Dynamics 365 for Sales and Customer Service Enterprise Edition' }
+      '*DYN365_ENTERPRISE_SALES' { $licName = 'Dynamics 365 for Sales Enterprise Edition' }
       '*DYN365_ENTERPRISE_TEAM_MEMBERS' { $licName = 'Dynamics 365 for Team Members Enterprise Edition' }
       '*DYN365_FINANCIALS_BUSINESS_SKU' { $licName = 'Dynamics 365 for Financials Business Edition' }
-      '*DYN365_MARKETING_USER' { $licName = 'Dynamics 365 for Marketing USL' }
       '*DYN365_MARKETING_APP' { $licName = 'Dynamics 365 Marketing' }
+      '*DYN365_MARKETING_USER' { $licName = 'Dynamics 365 for Marketing USL' }
       '*DYN365_SALES_INSIGHTS' { $licName = 'Dynamics 365 AI for Sales' }
-      '*D365_SALES_PRO' { $licName = 'Dynamics 365 for Sales Professional' }
+      '*DYN365_TEAM_MEMBERS' { $licName = 'Dynamics 365 Team Members' }
       '*Dynamics_365_for_Operations' { $licName = 'Dynamics 365 Unf Ops Plan Ent Edition' }
       '*ECAL_SERVICES' { $licName = 'ECAL' }
       '*EMS' { $licName = 'Enterprise Mobility + Security E3' }
       '*EMSPREMIUM' { $licName = 'Enterprise Mobility + Security E5' }
-      '*ENTERPRISEPACK' { $licName = 'Office 365 Enterprise E3' }
-      '*ENTERPRISEPACKLRG' { $licName = 'Office 365 Enterprise E3 LRG' }
-      '*ENTERPRISEPACKWITHOUTPROPLUS' { $licName = 'Office 365 Enterprise E3 without ProPlus Add-on' }
       '*ENTERPRISEPACK_B_PILOT' { $licName = 'Office 365 (Enterprise Preview)' }
       '*ENTERPRISEPACK_FACULTY' { $licName = 'Office 365 (Plan A3) for Faculty' }
       '*ENTERPRISEPACK_GOV' { $licName = 'Microsoft Office 365 (Plan G3) for Government' }
       '*ENTERPRISEPACK_STUDENT' { $licName = 'Office 365 (Plan A3) for Students' }
-      '*ENTERPRISEPREMIUM' { $licName = 'Enterprise E5 (with Audio Conferencing)' }
+      '*ENTERPRISEPACK' { $licName = 'Office 365 Enterprise E3' }
+      '*ENTERPRISEPACKLRG' { $licName = 'Office 365 Enterprise E3 LRG' }
+      '*ENTERPRISEPACKWITHOUTPROPLUS' { $licName = 'Office 365 Enterprise E3 without ProPlus Add-on' }
       '*ENTERPRISEPREMIUM_NOPSTNCONF' { $licName = 'Enterprise E5 (without Audio Conferencing)' }
-      '*ENTERPRISEWITHSCAL' { $licName = 'Office 365 Enterprise E4' }
+      '*ENTERPRISEPREMIUM' { $licName = 'Enterprise E5 (with Audio Conferencing)' }
       '*ENTERPRISEWITHSCAL_FACULTY' { $licName = 'Office 365 (Plan A4) for Faculty' }
       '*ENTERPRISEWITHSCAL_GOV' { $licName = 'Microsoft Office 365 (Plan G4) for Government' }
       '*ENTERPRISEWITHSCAL_STUDENT' { $licName = 'Office 365 (Plan A4) for Students' }
-      '*EOP_ENTERPRISE' { $licName = 'Exchange Online Protection' }
+      '*ENTERPRISEWITHSCAL' { $licName = 'Office 365 Enterprise E4' }
       '*EOP_ENTERPRISE_FACULTY' { $licName = 'Exchange Online Protection for Faculty' }
-      '*EQUIVIO_ANALYTICS' { $licName = 'Office 365 Advanced Compliance' }
+      '*EOP_ENTERPRISE' { $licName = 'Exchange Online Protection' }
       '*EQUIVIO_ANALYTICS_FACULTY' { $licName = 'Office 365 Advanced Compliance for Faculty' }
+      '*EQUIVIO_ANALYTICS' { $licName = 'Office 365 Advanced Compliance' }
       '*ESKLESSWOFFPACK_GOV' { $licName = 'Microsoft Office 365 (Plan K2) for Government' }
-      '*EXCHANGEARCHIVE' { $licName = 'Exchange Online Archiving' }
-      '*EXCHANGEARCHIVE_ADDON' { $licName = 'Exchange Online Archiving for Exchange Online' }
-      '*EXCHANGEDESKLESS' { $licName = 'Exchange Online Kiosk' }
-      '*EXCHANGEENTERPRISE' { $licName = 'Exchange Online Plan 2' }
-      '*EXCHANGEENTERPRISE_FACULTY' { $licName = 'Exch Online Plan 2 for Faculty' }
-      '*EXCHANGEENTERPRISE_GOV' { $licName = 'Microsoft Office 365 Exchange Online (Plan 2) only for Government' }
-      '*EXCHANGEESSENTIALS' { $licName = 'Exchange Online Essentials' }
-      '*EXCHANGESTANDARD' { $licName = 'Exchange Online Plan 1' }
-      '*EXCHANGESTANDARD_GOV' { $licName = 'Microsoft Office 365 Exchange Online (Plan 1) only for Government' }
-      '*EXCHANGESTANDARD_STUDENT' { $licName = 'Exchange Online (Plan 1) for Students' }
-      '*EXCHANGETELCO' { $licName = 'Exchange Online POP' }
       '*EXCHANGE_ANALYTICS' { $licName = 'Microsoft MyAnalytics' }
       '*EXCHANGE_L_STANDARD' { $licName = 'Exchange Online (Plan 1)' }
       '*EXCHANGE_S_ARCHIVE_ADDON_GOV' { $licName = 'Exchange Online Archiving' }
-      '*EXCHANGE_S_DESKLESS' { $licName = 'Exchange Online Kiosk' }
       '*EXCHANGE_S_DESKLESS_GOV' { $licName = 'Exchange Kiosk' }
-      '*EXCHANGE_S_ENTERPRISE' { $licName = 'Exchange Online (Plan 2) Ent' }
+      '*EXCHANGE_S_DESKLESS' { $licName = 'Exchange Online Kiosk' }
       '*EXCHANGE_S_ENTERPRISE_GOV' { $licName = 'Exchange Plan 2G' }
+      '*EXCHANGE_S_ENTERPRISE' { $licName = 'Exchange Online (Plan 2) Ent' }
       '*EXCHANGE_S_ESSENTIALS' { $licName = 'Exchange Online Essentials' }
       '*EXCHANGE_S_FOUNDATION' { $licName = 'Exchange Foundation for certain SKUs' }
-      '*EXCHANGE_S_STANDARD' { $licName = 'Exchange Online Plan 2' }
       '*EXCHANGE_S_STANDARD_MIDMARKET' { $licName = 'Exchange Online Plan 1' }
-      '*FLOW_FREE' { $licName = 'Microsoft Flow (Free)' }
+      '*EXCHANGE_S_STANDARD' { $licName = 'Exchange Online Plan 2' }
+      '*EXCHANGEARCHIVE_ADDON' { $licName = 'Exchange Online Archiving for Exchange Online' }
+      '*EXCHANGEARCHIVE' { $licName = 'Exchange Online Archiving' }
+      '*EXCHANGEDESKLESS' { $licName = 'Exchange Online Kiosk' }
+      '*EXCHANGEENTERPRISE_FACULTY' { $licName = 'Exch Online Plan 2 for Faculty' }
+      '*EXCHANGEENTERPRISE_GOV' { $licName = 'Microsoft Office 365 Exchange Online (Plan 2) only for Government' }
+      '*EXCHANGEENTERPRISE' { $licName = 'Exchange Online Plan 2' }
+      '*EXCHANGEESSENTIALS' { $licName = 'Exchange Online Essentials' }
+      '*EXCHANGESTANDARD_GOV' { $licName = 'Microsoft Office 365 Exchange Online (Plan 1) only for Government' }
+      '*EXCHANGESTANDARD_STUDENT' { $licName = 'Exchange Online (Plan 1) for Students' }
+      '*EXCHANGESTANDARD' { $licName = 'Exchange Online Plan 1' }
+      '*EXCHANGETELCO' { $licName = 'Exchange Online POP' }
+      '*FLOW_FREE' { $licName = 'Microsoft Power Automate (Free)' }
       '*FLOW_O365_P2' { $licName = 'Flow for Office 365' }
       '*FLOW_O365_P3' { $licName = 'Flow for Office 365' }
       '*FLOW_P1' { $licName = 'Microsoft Flow Plan 1' }
@@ -201,15 +198,15 @@ $users | Foreach-Object {
       '*FORMS_PLAN_E3' { $licName = 'Microsoft Forms (Plan E3)' }
       '*FORMS_PLAN_E5' { $licName = 'Microsoft Forms (Plan E5)' }
       '*INFOPROTECTION_P2' { $licName = 'Azure Information Protection Premium P2' }
-      '*INTUNE_A' { $licName = 'Windows Intune Plan A' }
       '*INTUNE_A_VL' { $licName = 'Intune (Volume License)' }
+      '*INTUNE_A' { $licName = 'Windows Intune Plan A' }
       '*INTUNE_O365' { $licName = 'Mobile Device Management for Office 365' }
       '*INTUNE_STORAGE' { $licName = 'Intune Extra Storage' }
       '*IT_ACADEMY_AD' { $licName = 'Microsoft Imagine Academy' }
-      '*LITEPACK' { $licName = 'Office 365 (Plan P1)' }
       '*LITEPACK_P2' { $licName = 'Office 365 Small Business Premium' }
-      '*LOCKBOX' { $licName = 'Customer Lockbox' }
+      '*LITEPACK' { $licName = 'Office 365 (Plan P1)' }
       '*LOCKBOX_ENTERPRISE' { $licName = 'Customer Lockbox' }
+      '*LOCKBOX' { $licName = 'Customer Lockbox' }
       '*MCOCAP' { $licName = 'Command Area Phone' }
       '*MCOEV' { $licName = 'Skype for Business Cloud PBX' }
       '*MCOIMP' { $licName = 'Skype for Business Online (Plan 1)' }
@@ -218,9 +215,9 @@ $users | Foreach-Object {
       '*MCOPLUSCAL' { $licName = 'Skype for Business Plus CAL' }
       '*MCOPSTN1' { $licName = 'Skype for Business Pstn Domestic Calling' }
       '*MCOPSTN2' { $licName = 'Skype for Business Pstn Domestic and International Calling' }
-      '*MCOSTANDARD' { $licName = 'Skype for Business Online Standalone Plan 2' }
       '*MCOSTANDARD_GOV' { $licName = 'Lync Plan 2G' }
       '*MCOSTANDARD_MIDMARKET' { $licName = 'Lync Online (Plan 1)' }
+      '*MCOSTANDARD' { $licName = 'Skype for Business Online Standalone Plan 2' }
       '*MCVOICECONF' { $licName = 'Lync Online (Plan 3)' }
       '*MDM_SALES_COLLABORATION' { $licName = 'Microsoft Dynamics Marketing Sales Collaboration' }
       '*MEE_FACULTY' { $licName = 'Minecraft Education Edition Faculty' }
@@ -231,108 +228,109 @@ $users | Foreach-Object {
       '*MICROSOFT_REMOTE_ASSIST' { $licName = 'Dynamics 365 Remote Assist' }
       '*MIDSIZEPACK' { $licName = 'Office 365 Midsize Business' }
       '*MINECRAFT_EDUCATION_EDITION' { $licName = 'Minecraft Education Edition Faculty' }
-      '*MS-AZR-0145P' { $licName = 'Azure' }
       '*MS_TEAMS_IW' { $licName = 'Microsoft Teams' }
+      '*MS-AZR-0145P' { $licName = 'Azure' }
       '*NBPOSTS' { $licName = 'Microsoft Social Engagement Additional 10k Posts (minimum 100 licenses) (Government Pricing)' }
       '*NBPROFESSIONALFORCRM' { $licName = 'Microsoft Social Listening Professional' }
-      '*O365_BUSINESS' { $licName = 'Microsoft 365 Apps for business' }
       '*O365_BUSINESS_ESSENTIALS' { $licName = 'Microsoft 365 Business Basic' }
       '*O365_BUSINESS_PREMIUM' { $licName = 'Microsoft 365 Business Standard' }
+      '*O365_BUSINESS' { $licName = 'Microsoft 365 Apps for business' }
+      '*OFFICE_FORMS_PLAN_2' { $licName = 'Microsoft Forms (Plan 2)' }
+      '*OFFICE_PRO_PLUS_SUBSCRIPTION_SMBIZ' { $licName = 'Office ProPlus' }
       '*OFFICE365_MULTIGEO' { $licName = 'Multi-Geo Capabilities in Office 365' }
-      '*OFFICESUBSCRIPTION' { $licName = 'Microsoft 365 Apps for enterprise' }
       '*OFFICESUBSCRIPTION_FACULTY' { $licName = 'Office 365 ProPlus for Faculty' }
       '*OFFICESUBSCRIPTION_GOV' { $licName = 'Office ProPlus' }
       '*OFFICESUBSCRIPTION_STUDENT' { $licName = 'Office ProPlus Student Benefit' }
-      '*OFFICE_FORMS_PLAN_2' { $licName = 'Microsoft Forms (Plan 2)' }
-      '*OFFICE_PRO_PLUS_SUBSCRIPTION_SMBIZ' { $licName = 'Office ProPlus' }
+      '*OFFICESUBSCRIPTION' { $licName = 'Microsoft 365 Apps for enterprise' }
       '*ONEDRIVESTANDARD' { $licName = 'OneDrive' }
       '*PAM_ENTERPRISE ' { $licName = 'Exchange Primary Active Manager' }
       '*PLANNERSTANDALONE' { $licName = 'Planner Standalone' }
-      '*POWERAPPS_INDIVIDUAL_USER' { $licName = 'Microsoft PowerApps and Logic flows' }
-      '*POWERAPPS_O365_P2' { $licName = 'PowerApps' }
-      '*POWERAPPS_O365_P3' { $licName = 'PowerApps for Office 365' }
-      '*POWERAPPS_VIRAL' { $licName = 'PowerApps (Free)' }
-      '*POWERFLOW_P1' { $licName = 'Microsoft PowerApps Plan 1' }
-      '*POWERFLOW_P2' { $licName = 'Microsoft PowerApps Plan 2' }
       '*POWER_BI_ADDON' { $licName = 'Office 365 Power BI Addon' }
       '*POWER_BI_INDIVIDUAL_USE' { $licName = 'Power BI Individual User' }
       '*POWER_BI_INDIVIDUAL_USER' { $licName = 'Power BI for Office 365 Individual' }
       '*POWER_BI_PRO' { $licName = 'Power BI Pro' }
       '*POWER_BI_STANDALONE' { $licName = 'Power BI Standalone' }
       '*POWER_BI_STANDARD' { $licName = 'Power-BI Standard' }
+      '*POWERAPPS_DEV' { $licName = 'Microsoft Power Apps for Developer' }
+      '*POWERAPPS_INDIVIDUAL_USER' { $licName = 'Microsoft PowerApps and Logic flows' }
+      '*POWERAPPS_O365_P2' { $licName = 'PowerApps' }
+      '*POWERAPPS_O365_P3' { $licName = 'PowerApps for Office 365' }
+      '*POWERAPPS_VIRAL' { $licName = 'Microsoft Power Apps (Plan 2 Trial)' }
+      '*POWERFLOW_P1' { $licName = 'Microsoft PowerApps Plan 1' }
+      '*POWERFLOW_P2' { $licName = 'Microsoft PowerApps Plan 2' }
       '*PREMIUM_ADMINDROID' { $licName = 'AdminDroid Office 365 Reporter' }
-      '*PROJECTCLIENT' { $licName = 'Project Professional' }
-      '*PROJECTESSENTIALS' { $licName = 'Project Lite' }
-      '*PROJECTONLINE_PLAN_1' { $licName = 'Project Online (Plan 1)' }
-      '*PROJECTONLINE_PLAN_1_FACULTY' { $licName = 'Project Online for Faculty Plan 1' }
-      '*PROJECTONLINE_PLAN_1_STUDENT' { $licName = 'Project Online for Students Plan 1' }
-      '*PROJECTONLINE_PLAN_2' { $licName = 'Project Online and PRO' }
-      '*PROJECTONLINE_PLAN_2_FACULTY' { $licName = 'Project Online for Faculty Plan 2' }
-      '*PROJECTONLINE_PLAN_2_STUDENT' { $licName = 'Project Online for Students Plan 2' }
-      '*PROJECTPREMIUM' { $licName = 'Project Online Premium' }
-      '*PROJECTPROFESSIONAL' { $licName = 'Project Online Pro' }
-      '*PROJECTWORKMANAGEMENT' { $licName = 'Office 365 Planner Preview' }
       '*PROJECT_CLIENT_SUBSCRIPTION' { $licName = 'Project Pro for Office 365' }
       '*PROJECT_ESSENTIALS' { $licName = 'Project Lite' }
       '*PROJECT_MADEIRA_PREVIEW_IW_SKU' { $licName = 'Dynamics 365 for Financials for IWs' }
       '*PROJECT_ONLINE_PRO' { $licName = 'Project Online Plan 3' }
-      '*RIGHTSMANAGEMENT' { $licName = 'Azure Rights Management Premium' }
+      '*PROJECTCLIENT' { $licName = 'Project Professional' }
+      '*PROJECTESSENTIALS' { $licName = 'Project Lite' }
+      '*PROJECTONLINE_PLAN_1_FACULTY' { $licName = 'Project Online for Faculty Plan 1' }
+      '*PROJECTONLINE_PLAN_1_STUDENT' { $licName = 'Project Online for Students Plan 1' }
+      '*PROJECTONLINE_PLAN_1' { $licName = 'Project Online (Plan 1)' }
+      '*PROJECTONLINE_PLAN_2_FACULTY' { $licName = 'Project Online for Faculty Plan 2' }
+      '*PROJECTONLINE_PLAN_2_STUDENT' { $licName = 'Project Online for Students Plan 2' }
+      '*PROJECTONLINE_PLAN_2' { $licName = 'Project Online and PRO' }
+      '*PROJECTPREMIUM' { $licName = 'Project Online Premium' }
+      '*PROJECTPROFESSIONAL' { $licName = 'Project Online Pro' }
+      '*PROJECTWORKMANAGEMENT' { $licName = 'Office 365 Planner Preview' }
       '*RIGHTSMANAGEMENT_ADHOC' { $licName = 'Windows Azure Rights Management' }
       '*RIGHTSMANAGEMENT_STANDARD_FACULTY' { $licName = 'Azure Rights Management for faculty' }
       '*RIGHTSMANAGEMENT_STANDARD_STUDENT' { $licName = 'Information Rights Management for Students' }
-      '*RMS_S_ENTERPRISE' { $licName = 'Azure Active Directory Rights Management' }
+      '*RIGHTSMANAGEMENT' { $licName = 'Azure Rights Management Premium' }
       '*RMS_S_ENTERPRISE_GOV' { $licName = 'Windows Azure Active Directory Rights Management' }
+      '*RMS_S_ENTERPRISE' { $licName = 'Azure Active Directory Rights Management' }
       '*RMS_S_PREMIUM' { $licName = 'Azure Information Protection Plan 1' }
       '*RMS_S_PREMIUM2' { $licName = 'Azure Information Protection Premium P2' }
       '*SCHOOL_DATA_SYNC_P1' { $licName = 'School Data Sync (Plan 1)' }
-      '*SHAREPOINTDESKLESS' { $licName = 'SharePoint Online Kiosk' }
+      '*SHAREPOINT_PROJECT_EDU' { $licName = 'Project Online Service for Education' }
+      '*SHAREPOINT_PROJECT' { $licName = 'SharePoint Online (Plan 2) Project' }
       '*SHAREPOINTDESKLESS_GOV' { $licName = 'SharePoint Online Kiosk' }
-      '*SHAREPOINTENTERPRISE' { $licName = 'SharePoint Online (Plan 2)' }
+      '*SHAREPOINTDESKLESS' { $licName = 'SharePoint Online Kiosk' }
       '*SHAREPOINTENTERPRISE_EDU' { $licName = 'SharePoint Plan 2 for EDU' }
       '*SHAREPOINTENTERPRISE_GOV' { $licName = 'SharePoint Plan 2G' }
       '*SHAREPOINTENTERPRISE_MIDMARKET' { $licName = 'SharePoint Online (Plan 1)' }
+      '*SHAREPOINTENTERPRISE' { $licName = 'SharePoint Online (Plan 2)' }
       '*SHAREPOINTLITE' { $licName = 'SharePoint Online (Plan 1)' }
       '*SHAREPOINTPARTNER' { $licName = 'SharePoint Online Partner Access' }
-      '*SHAREPOINTSTANDARD' { $licName = 'SharePoint Online Plan 1' }
       '*SHAREPOINTSTANDARD_EDU' { $licName = 'SharePoint Plan 1 for EDU' }
+      '*SHAREPOINTSTANDARD' { $licName = 'SharePoint Online Plan 1' }
       '*SHAREPOINTSTORAGE' { $licName = 'SharePoint Online Storage' }
-      '*SHAREPOINTWAC' { $licName = 'Office Online' }
       '*SHAREPOINTWAC_EDU' { $licName = 'Office Online for Education' }
       '*SHAREPOINTWAC_GOV' { $licName = 'Office Online for Government' }
-      '*SHAREPOINT_PROJECT' { $licName = 'SharePoint Online (Plan 2) Project' }
-      '*SHAREPOINT_PROJECT_EDU' { $licName = 'Project Online Service for Education' }
+      '*SHAREPOINTWAC' { $licName = 'Office Online' }
       '*SMB_APPS' { $licName = 'Business Apps (free)' }
-      '*SMB_BUSINESS' { $licName = 'Office 365 Business' }
       '*SMB_BUSINESS_ESSENTIALS' { $licName = 'Office 365 Business Essentials' }
       '*SMB_BUSINESS_PREMIUM' { $licName = 'Office 365 Business Premium' }
-      '*SPZA IW' { $licName = 'Microsoft PowerApps Plan 2 Trial' }
+      '*SMB_BUSINESS' { $licName = 'Office 365 Business' }
       '*SPB' { $licName = 'Microsoft 365 Business' }
       '*SPE_E3' { $licName = 'Secure Productive Enterprise E3' }
+      '*SPZA IW' { $licName = 'Microsoft PowerApps Plan 2 Trial' }
       '*SQL_IS_SSIM' { $licName = 'Power BI Information Services' }
-      '*STANDARDPACK' { $licName = 'Office 365 (Plan E1)' }
+      '*STANDARD_B_PILOT' { $licName = 'Office 365 (Small Business Preview)' }
       '*STANDARDPACK_FACULTY' { $licName = 'Office 365 (Plan A1) for Faculty' }
       '*STANDARDPACK_GOV' { $licName = 'Microsoft Office 365 (Plan G1) for Government' }
       '*STANDARDPACK_STUDENT' { $licName = 'Office 365 (Plan A1) for Students' }
-      '*STANDARDWOFFPACK' { $licName = 'Office 365 (Plan E2)' }
-      '*STANDARDWOFFPACKPACK_FACULTY' { $licName = 'Office 365 (Plan A2) for Faculty' }
-      '*STANDARDWOFFPACKPACK_STUDENT' { $licName = 'Office 365 (Plan A2) for Students' }
+      '*STANDARDPACK' { $licName = 'Office 365 (Plan E1)' }
       '*STANDARDWOFFPACK_FACULTY' { $licName = 'Office 365 Education E1 for Faculty' }
       '*STANDARDWOFFPACK_GOV' { $licName = 'Microsoft Office 365 (Plan G2) for Government' }
       '*STANDARDWOFFPACK_IW_FACULTY' { $licName = 'Office 365 Education for Faculty' }
       '*STANDARDWOFFPACK_IW_STUDENT' { $licName = 'Office 365 Education for Students' }
       '*STANDARDWOFFPACK_STUDENT' { $licName = 'Microsoft Office 365 (Plan A2) for Students' }
-      '*STANDARD_B_PILOT' { $licName = 'Office 365 (Small Business Preview)' }
-      '*STREAM' { $licName = 'Microsoft Stream' }
+      '*STANDARDWOFFPACK' { $licName = 'Office 365 (Plan E2)' }
+      '*STANDARDWOFFPACKPACK_FACULTY' { $licName = 'Office 365 (Plan A2) for Faculty' }
+      '*STANDARDWOFFPACKPACK_STUDENT' { $licName = 'Office 365 (Plan A2) for Students' }
       '*STREAM_O365_E3' { $licName = 'Microsoft Stream for O365 E3 SKU' }
       '*STREAM_O365_E5' { $licName = 'Microsoft Stream for O365 E5 SKU' }
+      '*STREAM' { $licName = 'Microsoft Stream' }
       '*SWAY' { $licName = 'Sway' }
-      '*TEAMS1' { $licName = 'Microsoft Teams' }
       '*TEAMS_COMMERCIAL_TRIAL' { $licName = 'Microsoft Teams Commercial Cloud Trial' }
+      '*TEAMS1' { $licName = 'Microsoft Teams' }
       '*THREAT_INTELLIGENCE' { $licName = 'Office 365 Threat Intelligence' }
       '*VIDEO_INTEROP ' { $licName = 'Skype Meeting Video Interop for Skype for Business' }
+      '*VISIO_CLIENT_SUBSCRIPTION' { $licName = 'Visio Pro for Office 365' }
       '*VISIOCLIENT' { $licName = 'Visio Online Plan 2' }
       '*VISIOONLINE_PLAN1' { $licName = 'Visio Online Plan 1' }
-      '*VISIO_CLIENT_SUBSCRIPTION' { $licName = 'Visio Pro for Office 365' }
       '*WACONEDRIVEENTERPRISE' { $licName = 'OneDrive for Business (Plan 2)' }
       '*WACONEDRIVESTANDARD' { $licName = 'OneDrive for Business with Office Online' }
       '*WACSHAREPOINTSTD' { $licName = 'Office Online STD' }
@@ -343,8 +341,8 @@ $users | Foreach-Object {
       '*WIN10_VDA_E5' { $licName = 'Windows E5' }
       '*WINDOWS_STORE' { $licName = 'Windows Store' }
       '*YAMMER_EDU' { $licName = 'Yammer for Academic' }
-      '*YAMMER_ENTERPRISE' { $licName = 'Yammer for the Starship Enterprise' }
       '*YAMMER_ENTERPRISE_STANDALONE' { $licName = 'Yammer Enterprise' }
+      '*YAMMER_ENTERPRISE' { $licName = 'Yammer for the Starship Enterprise' }
       '*YAMMER_MIDSIZE' { $licName = 'Yammer' }
 
       default { $licName = $license }
@@ -357,7 +355,7 @@ $users | Foreach-Object {
       Licenses=$licName
     }
   }
-} | Select UserName,Licenses,UserPrincipalName | Export-CSV $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
+} | Select-Object UserName,Licenses,UserPrincipalName | Export-CSV $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
 
 ""; Write-Host "Done." -f "Green"; ""
 
