@@ -9,14 +9,15 @@
 
 .NOTES
     Filename: Export-MailboxStatistics.ps1
-    Version: 0.3
-    Last modified: 12-05-2023
+    Version: 0.4
+    Last modified: 15-05-2023
     Author: GSolone
     Blog: https://gioxx.org/tag/o365-powershell
     Twitter: @gioxx    
 
 .LINK
     https://morgantechspace.com/2021/01/check-size-and-status-of-archive-mailbox-powershell.html
+    https://learn.microsoft.com/en-us/microsoft-365/troubleshoot/archive-mailboxes/archivestatus-set-none
 #> 
 
 $Today = Get-Date -format yyyyMMdd
@@ -49,34 +50,33 @@ $Mailboxes | Foreach-Object {
     $ArchiveSize = $null
     Write-Progress -Activity "Processing $Mbox" -Status "$ProcessedCount out of $TotalMailboxes completed" -PercentComplete (($ProcessedCount / $TotalMailboxes) * 100)
 
-    if ($Mbox.ArchiveStatus -eq "Active") {
+    if ( $Mbox.ArchiveDatabase -ne $null ) {
         $MailboxArchiveSize = Get-MailboxStatistics $Mbox.UserPrincipalName -Archive
-        
-        if ($MailboxArchiveSize.TotalItemSize -ne $null) {
-        $ArchiveSize = [math]::Round(($MailboxArchiveSize.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',','')/1GB),2)
+        if ( $MailboxArchiveSize.TotalItemSize -ne $null ) {
+         $ArchiveSize = [math]::Round(($MailboxArchiveSize.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',','')/1GB),2)
         } else {
-        $ArchiveSize = 0
+         $ArchiveSize = 0
         }
     }
 
     $MailboxSize = [math]::Round((((Get-MailboxStatistics $Mbox.UserPrincipalName).TotalItemSize.Value.ToString()).Split("(")[1].Split(" ")[0].Replace(",","")/1GB),2)
 
     $Result += New-Object -TypeName PSObject -Property $([ordered]@{ 
-    UserName = $Mbox.DisplayName
-    ServerName = $Mbox.ServerName
-    Database = $Mbox.Database
-    RecipientTypeDetails = $Mbox.RecipientTypeDetails
-    PrimarySmtpAddress = $Mbox.PrimarySmtpAddress
-    MailboxSizeInGB = $MailboxSize
-    IssueWarningQuota = $Mbox.IssueWarningQuota
-    ProhibitSendQuota = $Mbox.ProhibitSendQuota
-    ArchiveStatus =$Mbox.ArchiveStatus
-    ArchiveName =$Mbox.ArchiveName
-    ArchiveState =$Mbox.ArchiveState
-    ArchiveMailboxSizeInGB = $ArchiveSize
-    ArchiveWarningQuota= if ( $Mbox.ArchiveStatus -eq "Active" ) { $Mbox.ArchiveWarningQuota } else { $null } 
-    ArchiveQuota = if ( $Mbox.ArchiveStatus -eq "Active" ) { $Mbox.ArchiveQuota } else { $null } 
-    AutoExpandingArchiveEnabled = $Mbox.AutoExpandingArchiveEnabled
+     UserName = $Mbox.DisplayName
+     ServerName = $Mbox.ServerName
+     Database = $Mbox.Database
+     RecipientTypeDetails = $Mbox.RecipientTypeDetails
+     PrimarySmtpAddress = $Mbox.PrimarySmtpAddress
+     MailboxSizeInGB = $MailboxSize
+     IssueWarningQuota = $Mbox.IssueWarningQuota
+     ProhibitSendQuota = $Mbox.ProhibitSendQuota
+     ArchiveDatabase = $Mbox.ArchiveDatabase
+     ArchiveName = $Mbox.ArchiveName
+     ArchiveState = $Mbox.ArchiveState
+     ArchiveMailboxSizeInGB = $ArchiveSize
+     ArchiveWarningQuota= if ( $Mbox.ArchiveDatabase -ne $null ) { $Mbox.ArchiveWarningQuota } else { $null } 
+     ArchiveQuota = if ( $Mbox.ArchiveDatabase -ne $null ) { $Mbox.ArchiveQuota } else { $null } 
+     AutoExpandingArchiveEnabled = $Mbox.AutoExpandingArchiveEnabled
     })
 }
 $Result | Export-CSV $CSV -NoTypeInformation -Encoding UTF8 -Delimiter ";"
