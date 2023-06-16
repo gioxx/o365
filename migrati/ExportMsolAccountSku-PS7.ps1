@@ -4,15 +4,16 @@ OFFICE 365: "User License Report" for PowerShell 7
 Autore originale:	Kombaiah Murugan (8 feb. 2016)
 URL originale:		http://www.morgantechspace.com/2016/02/get-all-licensed-office-365-users-with-powershell.html
 Modifiche:        GSolone
-Versione:         0.11
+Versione:         0.12
 Utilizzo:         .\ExportMsolAccountSku-PS7.ps1
                   (opzionale, posizione CSV) .\ExportMsolAccountSku-PS7.ps1 -CSV C:\Licenze.csv
                   (opzionale, dominio da filtrare) .\ExportMsolAccountSku-PS7.ps1 -domain contoso.com
 Info:				      https://gioxx.org/tag/o365-powershell
 Fonti utilizzate:	https://theposhwolf.com/howtos/Set-MgUserLicense-PowerShell-Assign-O365-License/
                   https://o365reports.com/2021/11/23/office-365-license-reporting-and-management-using-powershell
-Ultima modifica:	23-11-2022
+Ultima modifica:	19-05-2023
 Modifiche:
+    0.12- includo controllo e caricamento modulo Microsoft.Graph.Users.
     0.11- correggo un errore causato dal caricamento modulo MSOnline prima di Graph (vedi https://github.com/microsoftgraph/msgraph-sdk-powershell/issues/641).
           Approfitto di questo aggiornamento per correggere alcuni warning mostrati da VSCode e per modificare il blocco / funzione Pausa.
           Riordino le righe dei prodotti / licenze.
@@ -58,6 +59,14 @@ if($MOLModule.count -eq 0) {
 } else {
   Import-Module MSOnline -UseWindowsPowershell
   Connect-MsolService | Out-Null
+}
+
+$MOLModule=Get-Module -Name Microsoft.Graph.Users -ListAvailable
+if($MOLModule.count -eq 0) {
+  Write-Host "Installa il modulo Microsoft.Graph.Users usando questo comando (poi rilancia questo script): `nInstall-Module Microsoft.Graph.Users" -f "Yellow"
+  Exit
+} else {
+  Import-Module Microsoft.Graph.Users
 }
 
 # Main
