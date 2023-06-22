@@ -28,9 +28,7 @@ try	{
 	Write-Host "Elenco delle location disponibili e relative sale riunioni:" -f "yellow"
 	foreach($roomlist in Get-DistributionGroup -RecipientTypeDetails RoomList) {
 		$roomlistname = $roomlist.DisplayName
-		Get-DistributionGroupMember $roomlist.PrimarySmtpAddress |
-		Select-Object @{n="Room List";e={$roomlistname}},
-		@{n="Room";e={$_.DisplayName}}
+		Get-DistributionGroupMember $roomlist.PrimarySmtpAddress | Select-Object @{n="Room List";e={$roomlistname}},@{n="Room";e={$_.DisplayName}}
 	}
 	"";""
 
